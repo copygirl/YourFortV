@@ -1,0 +1,53 @@
+[gd_scene load_steps=8 format=2]
+
+[ext_resource path="res://gfx/player.png" type="Texture" id=1]
+[ext_resource path="res://gfx/cursor.png" type="Texture" id=2]
+[ext_resource path="res://Player.cs" type="Script" id=3]
+[ext_resource path="res://Viewport.cs" type="Script" id=4]
+[ext_resource path="res://Cursor.cs" type="Script" id=5]
+[ext_resource path="res://Camera.cs" type="Script" id=6]
+
+[sub_resource type="CircleShape2D" id=1]
+radius = 8.0
+
+[node name="Game" type="ViewportContainer"]
+margin_right = 384.0
+margin_bottom = 216.0
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
+
+[node name="ViewportTexture" type="TextureRect" parent="."]
+margin_right = 384.0
+margin_bottom = 216.0
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Viewport" type="Viewport" parent="."]
+size = Vector2( 640, 360 )
+handle_input_locally = false
+render_target_v_flip = true
+render_target_update_mode = 3
+script = ExtResource( 4 )
+
+[node name="Cursor" type="Node2D" parent="Viewport"]
+script = ExtResource( 5 )
+
+[node name="Sprite" type="Sprite" parent="Viewport/Cursor"]
+texture = ExtResource( 2 )
+
+[node name="Player" type="KinematicBody2D" parent="Viewport"]
+position = Vector2( 320, 180 )
+script = ExtResource( 3 )
+
+[node name="Camera2D" type="Camera2D" parent="Viewport/Player"]
+current = true
+script = ExtResource( 6 )
+
+[node name="CircleShape" type="CollisionShape2D" parent="Viewport/Player"]
+shape = SubResource( 1 )
+
+[node name="Sprite" type="Sprite" parent="Viewport/Player"]
+texture = ExtResource( 1 )

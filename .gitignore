@@ -1,0 +1,8 @@
+/.import/
+/.mono/
+/bin/
+/build/
+/lib/
+/git_api.*
+*.translation
+export_presets.cfg
