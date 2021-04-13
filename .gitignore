@@ -3,6 +3,6 @@
 /bin/
 /build/
 /lib/
-/git_api.*
 *.translation
 export_presets.cfg
+mono_crash.*

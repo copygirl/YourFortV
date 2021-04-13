@@ -3,7 +3,7 @@ using System;
 
 public class Game : Node
 {
-    public Vector2 PreferredScreenSize { get; } = new Vector2(640, 360);
+    [Export] public Vector2 PreferredScreenSize { get; set; } = new Vector2(640, 360);
 
     [Export] public PackedScene Player { get; set; }
     [Export] public PackedScene Block { get; set; }

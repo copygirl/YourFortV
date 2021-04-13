@@ -1,0 +1,228 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://ui_theme.tres" type="Theme" id=1]
+[ext_resource path="res://src/EscapeMenu.cs" type="Script" id=2]
+
+[node name="EscapeMenu" type="Container"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme = ExtResource( 1 )
+script = ExtResource( 2 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+StatusPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerStatus/Status")
+ServerStartStopPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerServer/ServerStartStop")
+ServerPortPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerServer/ServerPort")
+ClientDisConnectPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerClient/ClientDisConnect")
+ClientAddressPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerClient/ClientAddress")
+ReturnPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/Return")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color( 0, 0, 0, 0.501961 )
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+margin_left = 527.0
+margin_top = 274.0
+margin_right = 752.0
+margin_bottom = 446.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer"]
+margin_left = 7.0
+margin_top = 7.0
+margin_right = 218.0
+margin_bottom = 165.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_right = 211.0
+margin_bottom = 9.0
+text = "Pause Menu"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_top = 13.0
+margin_right = 211.0
+margin_bottom = 17.0
+
+[node name="ContainerStatus" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_top = 21.0
+margin_right = 211.0
+margin_bottom = 34.0
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerStatus"]
+margin_top = 2.0
+margin_right = 36.0
+margin_bottom = 11.0
+rect_min_size = Vector2( 36, 0 )
+text = "Status:"
+align = 2
+
+[node name="Status" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerStatus"]
+margin_left = 40.0
+margin_right = 211.0
+margin_bottom = 13.0
+rect_min_size = Vector2( 0, 13 )
+size_flags_horizontal = 3
+size_flags_vertical = 5
+text = "No Connection"
+align = 1
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ContainerServer" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_top = 38.0
+margin_right = 211.0
+margin_bottom = 57.0
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerServer"]
+margin_top = 5.0
+margin_right = 36.0
+margin_bottom = 14.0
+rect_min_size = Vector2( 36, 0 )
+text = "Port:"
+align = 2
+
+[node name="ServerPort" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerServer"]
+margin_left = 40.0
+margin_right = 90.0
+margin_bottom = 19.0
+custom_constants/minimum_spaces = 8
+align = 1
+max_length = 6
+caret_blink = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ServerStartStop" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerServer"]
+margin_left = 94.0
+margin_right = 211.0
+margin_bottom = 19.0
+size_flags_horizontal = 3
+text = "Start Server"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ContainerClient" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_top = 61.0
+margin_right = 211.0
+margin_bottom = 80.0
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerClient"]
+margin_top = 5.0
+margin_right = 36.0
+margin_bottom = 14.0
+rect_min_size = Vector2( 36, 0 )
+text = "Address:"
+align = 2
+
+[node name="ClientAddress" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerClient"]
+margin_left = 40.0
+margin_right = 160.0
+margin_bottom = 19.0
+rect_min_size = Vector2( 120, 0 )
+align = 1
+caret_blink = true
+
+[node name="ClientDisConnect" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerClient"]
+margin_left = 164.0
+margin_right = 211.0
+margin_bottom = 19.0
+size_flags_horizontal = 3
+text = "Connect"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_top = 84.0
+margin_right = 211.0
+margin_bottom = 108.0
+
+[node name="HideAddress" type="CheckBox" parent="CenterContainer/PanelContainer/VBoxContainer/HBoxContainer"]
+margin_right = 82.0
+margin_bottom = 24.0
+text = "Hide Address"
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/HBoxContainer"]
+margin_left = 86.0
+margin_top = 7.0
+margin_right = 173.0
+margin_bottom = 16.0
+custom_colors/font_color = Color( 0.6, 0.6, 0.6, 1 )
+text = "(for streamers etc.)"
+
+[node name="HSeparator2" type="HSeparator" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_top = 112.0
+margin_right = 211.0
+margin_bottom = 116.0
+
+[node name="Quit" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_top = 120.0
+margin_right = 211.0
+margin_bottom = 137.0
+rect_min_size = Vector2( 0, 17 )
+
+[node name="RichTextLabel" type="RichTextLabel" parent="CenterContainer/PanelContainer/VBoxContainer/Quit"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -105.5
+margin_top = -5.0
+margin_right = 105.5
+margin_bottom = 5.0
+mouse_filter = 1
+bbcode_enabled = true
+bbcode_text = "[center]Quit Game [color=#999](Alt+F4)[/color][/center]"
+text = "Quit Game (Alt+F4)"
+fit_content_height = true
+scroll_active = false
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Return" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer"]
+margin_top = 141.0
+margin_right = 211.0
+margin_bottom = 158.0
+rect_min_size = Vector2( 0, 17 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="RichTextLabel" type="RichTextLabel" parent="CenterContainer/PanelContainer/VBoxContainer/Return"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -105.5
+margin_top = -5.0
+margin_right = 105.5
+margin_bottom = 5.0
+mouse_filter = 1
+bbcode_enabled = true
+bbcode_text = "[center]Return to Game [color=#999](Esc)[/color][/center]"
+text = "Return to Game (Esc)"
+fit_content_height = true
+scroll_active = false
+__meta__ = {
+"_edit_use_anchors_": false
+}
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/ContainerServer/ServerStartStop" to="." method="_on_ServerStartStop_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/ContainerClient/ClientDisConnect" to="." method="_on_ClientDisConnect_pressed"]
+[connection signal="toggled" from="CenterContainer/PanelContainer/VBoxContainer/HBoxContainer/HideAddress" to="." method="_on_HideAddress_toggled"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/Quit" to="." method="_on_Quit_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/Return" to="." method="_on_Return_pressed"]

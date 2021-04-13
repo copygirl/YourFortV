@@ -6,7 +6,7 @@ public class Camera : Camera2D
 
     public override void _EnterTree()
     {
-        Cursor = GetViewport().GetNode<Cursor>("Cursor");
+        // Cursor = GetViewport().GetNode<Cursor>("Cursor");
     }
 
     public override void _Process(float delta)
