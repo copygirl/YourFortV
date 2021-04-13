@@ -8,11 +8,8 @@
 radius = 8.0
 
 [node name="Player" type="KinematicBody2D"]
-position = Vector2( 640, 360 )
+collision_layer = 0
 script = ExtResource( 3 )
-__meta__ = {
-"_edit_group_": true
-}
 
 [node name="Camera2D" type="Camera2D" parent="."]
 current = true
