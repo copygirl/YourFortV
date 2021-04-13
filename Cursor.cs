@@ -4,7 +4,6 @@ public class Cursor : Node2D
 {
     public override void _Ready()
     {
-        Visible = false;
         Input.SetMouseMode(Input.MouseMode.Hidden);
     }
 
@@ -18,8 +17,6 @@ public class Cursor : Node2D
 
     public override void _Process(float delta)
     {
-        var viewport = (Viewport)GetViewport();
-        var origin   = viewport.CanvasTransform.origin;
-        Position = viewport.GetMousePosition() / viewport.Scale - origin;
+        Position = GetGlobalMousePosition();
     }
 }

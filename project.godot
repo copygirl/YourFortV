@@ -28,7 +28,7 @@ config/icon="res://gfx/icon.png"
 
 window/size/width=1280
 window/size/height=720
-window/stretch/aspect="expand"
+window/stretch/mode="viewport"
 
 [gdnative]
 
@@ -82,4 +82,5 @@ move_jump={
 [rendering]
 
 quality/2d/use_pixel_snap=true
-environment/default_environment="res://default_env.tres"
+quality/filters/use_nearest_mipmap_filter=true
+quality/dynamic_fonts/use_oversampling=false
