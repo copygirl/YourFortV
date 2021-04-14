@@ -1,13 +1,14 @@
-[gd_scene load_steps=9 format=2]
+[gd_scene load_steps=10 format=2]
 
 [ext_resource path="res://scene/EscapeMenu.tscn" type="PackedScene" id=1]
 [ext_resource path="res://src/Cursor.cs" type="Script" id=2]
 [ext_resource path="res://src/Game.cs" type="Script" id=3]
 [ext_resource path="res://gfx/cursor.png" type="Texture" id=4]
-[ext_resource path="res://scene/Player.tscn" type="PackedScene" id=5]
+[ext_resource path="res://scene/LocalPlayer.tscn" type="PackedScene" id=5]
 [ext_resource path="res://scene/Block.tscn" type="PackedScene" id=6]
 [ext_resource path="res://src/Viewport.cs" type="Script" id=7]
 [ext_resource path="res://src/Network.cs" type="Script" id=8]
+[ext_resource path="res://scene/Player.tscn" type="PackedScene" id=9]
 
 [node name="Game" type="Node"]
 script = ExtResource( 3 )
@@ -19,6 +20,8 @@ script = ExtResource( 7 )
 
 [node name="Network" type="Node" parent="."]
 script = ExtResource( 8 )
+PlayerContainerPath = NodePath("..")
+OtherPlayer = ExtResource( 9 )
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

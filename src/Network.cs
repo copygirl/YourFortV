@@ -16,17 +16,18 @@ public class Network : Node
     [Export] public ushort DefaultPort { get; set; } = 42005;
     [Export] public string DefaultAddress { get; set; } = "localhost";
 
-    public Node PlayerContainer { get; private set; }
-    public Player OwnPlayer { get; private set; }
-    public PackedScene OtherPlayer { get; private set; }
+    [Export] public NodePath PlayerContainerPath { get; set; }
+    [Export] public PackedScene OtherPlayer { get; set; }
 
+    public Node PlayerContainer { get; private set; }
+
+    public Player OwnPlayer { get; private set; }
     public Status CurrentStatus { get; private set; } = Status.NoConnection;
     [Signal] public delegate void StatusChanged(Status status);
 
     public override void _Ready()
     {
-        OtherPlayer     = GD.Load<PackedScene>("res://scene/OtherPlayer.tscn");
-        PlayerContainer = GetParent();
+        PlayerContainer = GetNode(PlayerContainerPath);
 
         GetTree().Connect("connected_to_server", this, "OnClientConnected");
         GetTree().Connect("connection_failed", this, "DisconnectFromServer");
