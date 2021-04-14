@@ -15,8 +15,10 @@ _global_script_class_icons={
 
 [application]
 
-config/name="YourfortV"
+config/name="YourFort V"
 run/main_scene="res://scene/GameScene.tscn"
+boot_splash/image="res://gfx/icon.png"
+boot_splash/use_filter=false
 config/icon="res://gfx/icon.png"
 
 [display]

@@ -1,6 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YourfortV", "YourfortV.csproj", "{FF89645B-804D-485D-BFAB-AA51330D8862}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YourFort V", "YourFort V.csproj", "{FF89645B-804D-485D-BFAB-AA51330D8862}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
