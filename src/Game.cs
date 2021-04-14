@@ -1,42 +1,21 @@
 using Godot;
-using System;
 
 public class Game : Node
 {
-    [Export] public Vector2 PreferredScreenSize { get; set; } = new Vector2(640, 360);
+    [Export] public Vector2 RoomSize { get; set; } = new Vector2(32, 18) * 16;
 
     [Export] public PackedScene Player { get; set; }
     [Export] public PackedScene Block { get; set; }
 
     public override void _Ready()
     {
-        GetTree().Connect("screen_resized", this, "OnWindowResized");
-        OnWindowResized();
-
         SpawnPlayer();
         SpawnBlocks();
-    }
-
-    private void OnWindowResized()
-    {
-        var viewport = GetViewport();
-
-        var scaleX = OS.WindowSize.x / PreferredScreenSize.x;
-        var scaleY = OS.WindowSize.y / PreferredScreenSize.y;
-        var scale  = Math.Max(1, Mathf.RoundToInt(Mathf.Min(scaleX, scaleY)));
-
-        viewport.Size = (OS.WindowSize / scale).Ceil();
-
-        // This prevents the viewport from being "squished" to fit the window.
-        // The difference is only a few pixels, but it results in distortion
-        // around the center horizontal and vertical lines of the screen.
-        viewport.SetAttachToScreenRect(new Rect2(0, 0, viewport.Size * scale));
     }
 
     private void SpawnPlayer()
     {
         var player = (Player)Player.Instance();
-        player.Position = PreferredScreenSize / 2;
         AddChild(player);
     }
 
@@ -50,15 +29,15 @@ public class Game : Node
         }
 
         // Top and bottom.
-        for (var x = 16; x <= (int)PreferredScreenSize.x - 16; x += 16) {
-            SpawnBlockAt(x, 20);
-            SpawnBlockAt(x, (int)PreferredScreenSize.y - 20);
+        for (var x = (int)RoomSize.x / -2; x <= (int)RoomSize.x / 2; x += 16) {
+            SpawnBlockAt(x, (int)RoomSize.y / -2);
+            SpawnBlockAt(x, (int)RoomSize.y /  2);
         }
 
         // Left and right.
-        for (var y = 36; y <= (int)PreferredScreenSize.y - 36; y += 16) {
-            SpawnBlockAt(16, y);
-            SpawnBlockAt((int)PreferredScreenSize.x - 16, y);
+        for (var y = (int)RoomSize.y / -2 + 16; y <= (int)RoomSize.y / 2 - 16; y += 16) {
+            SpawnBlockAt((int)RoomSize.x / -2, y);
+            SpawnBlockAt((int)RoomSize.x /  2, y);
         }
     }
 }
