@@ -1,9 +1,12 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://ui_theme.tres" type="Theme" id=1]
 [ext_resource path="res://src/EscapeMenu.cs" type="Script" id=2]
+[ext_resource path="res://gfx/player.png" type="Texture" id=3]
+[ext_resource path="res://src/EscapeMenuMultiplayer.cs" type="Script" id=4]
+[ext_resource path="res://src/EscapeMenuAppearance.cs" type="Script" id=5]
 
-[node name="EscapeMenu" type="Container"]
+[node name="EscapeMenu" type="Control"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 theme = ExtResource( 1 )
@@ -11,11 +14,6 @@ script = ExtResource( 2 )
 __meta__ = {
 "_edit_use_anchors_": false
 }
-StatusPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerStatus/Status")
-ServerStartStopPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerServer/ServerStartStop")
-ServerPortPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerServer/ServerPort")
-ClientDisConnectPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerClient/ClientDisConnect")
-ClientAddressPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/ContainerClient/ClientAddress")
 ReturnPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/Return")
 
 [node name="ColorRect" type="ColorRect" parent="."]
@@ -26,26 +24,29 @@ color = Color( 0, 0, 0, 0.501961 )
 [node name="CenterContainer" type="CenterContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
 [node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
-margin_left = 522.0
-margin_top = 274.0
-margin_right = 757.0
-margin_bottom = 446.0
+margin_left = 518.0
+margin_top = 258.0
+margin_right = 761.0
+margin_bottom = 461.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer"]
 margin_left = 7.0
 margin_top = 7.0
-margin_right = 228.0
-margin_bottom = 165.0
+margin_right = 236.0
+margin_bottom = 196.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer"]
-margin_right = 221.0
+margin_right = 229.0
 margin_bottom = 9.0
-text = "Pause Menu"
+text = "Escape Menu"
 align = 1
 __meta__ = {
 "_edit_use_anchors_": false
@@ -53,15 +54,108 @@ __meta__ = {
 
 [node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/VBoxContainer"]
 margin_top = 13.0
-margin_right = 221.0
+margin_right = 229.0
 margin_bottom = 17.0
 
-[node name="ContainerStatus" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
+[node name="TabContainer" type="TabContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
 margin_top = 21.0
-margin_right = 221.0
-margin_bottom = 34.0
+margin_right = 229.0
+margin_bottom = 139.0
+custom_constants/side_margin = 4
+tab_align = 0
+use_hidden_tabs_for_min_size = true
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerStatus"]
+[node name="Appearance" type="CenterContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 4.0
+margin_top = 27.0
+margin_right = -4.0
+margin_bottom = -4.0
+script = ExtResource( 5 )
+PlayerNamePath = NodePath("VBoxContainer/ContainerName/Name")
+ColorPreviewPath = NodePath("VBoxContainer/ContainerColor/Preview")
+ColorSliderPath = NodePath("VBoxContainer/ContainerColor/HSlider")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance"]
+margin_left = 19.0
+margin_top = 24.0
+margin_right = 201.0
+margin_bottom = 63.0
+
+[node name="ContainerName" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer"]
+margin_right = 182.0
+margin_bottom = 19.0
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName"]
+margin_top = 5.0
+margin_right = 36.0
+margin_bottom = 14.0
+rect_min_size = Vector2( 36, 0 )
+text = "Name:"
+align = 2
+
+[node name="Name" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName"]
+margin_left = 40.0
+margin_right = 182.0
+margin_bottom = 19.0
+rect_min_size = Vector2( 142, 0 )
+size_flags_horizontal = 3
+align = 1
+max_length = 20
+caret_blink = true
+
+[node name="ContainerColor" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer"]
+margin_top = 23.0
+margin_right = 182.0
+margin_bottom = 39.0
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor"]
+margin_top = 3.0
+margin_right = 36.0
+margin_bottom = 12.0
+rect_min_size = Vector2( 36, 0 )
+text = "Color:"
+align = 2
+
+[node name="Preview" type="TextureRect" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor"]
+margin_left = 40.0
+margin_right = 56.0
+margin_bottom = 16.0
+texture = ExtResource( 3 )
+
+[node name="HSlider" type="HSlider" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor"]
+margin_left = 60.0
+margin_right = 182.0
+margin_bottom = 16.0
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.0
+scrollable = false
+
+[node name="Multiplayer" type="VBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 4.0
+margin_top = 27.0
+margin_right = -4.0
+margin_bottom = -4.0
+script = ExtResource( 4 )
+StatusPath = NodePath("ContainerStatus/Status")
+ServerStartStopPath = NodePath("ContainerServer/ServerStartStop")
+ServerPortPath = NodePath("ContainerServer/ServerPort")
+ClientDisConnectPath = NodePath("ContainerClient/ClientDisConnect")
+ClientAddressPath = NodePath("ContainerClient/ClientAddress")
+
+[node name="ContainerStatus" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+margin_right = 221.0
+margin_bottom = 13.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerStatus"]
 margin_top = 2.0
 margin_right = 36.0
 margin_bottom = 11.0
@@ -69,7 +163,7 @@ rect_min_size = Vector2( 36, 0 )
 text = "Status:"
 align = 2
 
-[node name="Status" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerStatus"]
+[node name="Status" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerStatus"]
 modulate = Color( 1, 0, 0, 1 )
 margin_left = 40.0
 margin_right = 221.0
@@ -84,12 +178,12 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ContainerServer" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
-margin_top = 38.0
+[node name="ContainerServer" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+margin_top = 17.0
 margin_right = 221.0
-margin_bottom = 57.0
+margin_bottom = 36.0
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerServer"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer"]
 margin_top = 5.0
 margin_right = 36.0
 margin_bottom = 14.0
@@ -97,7 +191,7 @@ rect_min_size = Vector2( 36, 0 )
 text = "Port:"
 align = 2
 
-[node name="ServerPort" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerServer"]
+[node name="ServerPort" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer"]
 margin_left = 40.0
 margin_right = 90.0
 margin_bottom = 19.0
@@ -109,7 +203,7 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ServerStartStop" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerServer"]
+[node name="ServerStartStop" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer"]
 margin_left = 94.0
 margin_right = 221.0
 margin_bottom = 19.0
@@ -119,12 +213,12 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ContainerClient" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
-margin_top = 61.0
+[node name="ContainerClient" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+margin_top = 40.0
 margin_right = 221.0
-margin_bottom = 80.0
+margin_bottom = 59.0
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerClient"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient"]
 margin_top = 5.0
 margin_right = 36.0
 margin_bottom = 14.0
@@ -132,7 +226,7 @@ rect_min_size = Vector2( 36, 0 )
 text = "Address:"
 align = 2
 
-[node name="ClientAddress" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerClient"]
+[node name="ClientAddress" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient"]
 margin_left = 40.0
 margin_right = 160.0
 margin_bottom = 19.0
@@ -140,7 +234,7 @@ rect_min_size = Vector2( 120, 0 )
 align = 1
 caret_blink = true
 
-[node name="ClientDisConnect" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/ContainerClient"]
+[node name="ClientDisConnect" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient"]
 margin_left = 164.0
 margin_right = 221.0
 margin_bottom = 19.0
@@ -148,17 +242,17 @@ rect_min_size = Vector2( 57, 0 )
 size_flags_horizontal = 3
 text = "Connect"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer"]
-margin_top = 84.0
+[node name="ContainerHideAddress" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+margin_top = 63.0
 margin_right = 221.0
-margin_bottom = 108.0
+margin_bottom = 87.0
 
-[node name="HideAddress" type="CheckBox" parent="CenterContainer/PanelContainer/VBoxContainer/HBoxContainer"]
+[node name="HideAddress" type="CheckBox" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerHideAddress"]
 margin_right = 82.0
 margin_bottom = 24.0
 text = "Hide Address"
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/HBoxContainer"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerHideAddress"]
 margin_left = 86.0
 margin_top = 7.0
 margin_right = 173.0
@@ -167,14 +261,14 @@ custom_colors/font_color = Color( 0.6, 0.6, 0.6, 1 )
 text = "(for streamers etc.)"
 
 [node name="HSeparator2" type="HSeparator" parent="CenterContainer/PanelContainer/VBoxContainer"]
-margin_top = 112.0
-margin_right = 221.0
-margin_bottom = 116.0
+margin_top = 143.0
+margin_right = 229.0
+margin_bottom = 147.0
 
 [node name="Quit" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer"]
-margin_top = 120.0
-margin_right = 221.0
-margin_bottom = 137.0
+margin_top = 151.0
+margin_right = 229.0
+margin_bottom = 168.0
 rect_min_size = Vector2( 0, 17 )
 
 [node name="RichTextLabel" type="RichTextLabel" parent="CenterContainer/PanelContainer/VBoxContainer/Quit"]
@@ -197,9 +291,9 @@ __meta__ = {
 }
 
 [node name="Return" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer"]
-margin_top = 141.0
-margin_right = 221.0
-margin_bottom = 158.0
+margin_top = 172.0
+margin_right = 229.0
+margin_bottom = 189.0
 rect_min_size = Vector2( 0, 17 )
 __meta__ = {
 "_edit_use_anchors_": false
@@ -223,8 +317,11 @@ scroll_active = false
 __meta__ = {
 "_edit_use_anchors_": false
 }
-[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/ContainerServer/ServerStartStop" to="." method="_on_ServerStartStop_pressed"]
-[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/ContainerClient/ClientDisConnect" to="." method="_on_ClientDisConnect_pressed"]
-[connection signal="toggled" from="CenterContainer/PanelContainer/VBoxContainer/HBoxContainer/HideAddress" to="." method="_on_HideAddress_toggled"]
+[connection signal="visibility_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Appearance_visibility_changed"]
+[connection signal="text_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName/Name" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Name_text_changed"]
+[connection signal="value_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor/HSlider" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_HSlider_value_changed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer/ServerStartStop" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerStartStop_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient/ClientDisConnect" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ClientDisConnect_pressed"]
+[connection signal="toggled" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerHideAddress/HideAddress" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_HideAddress_toggled"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/Quit" to="." method="_on_Quit_pressed"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/Return" to="." method="_on_Return_pressed"]

@@ -21,7 +21,7 @@ public class Network : Node
 
     public Node PlayerContainer { get; private set; }
 
-    public Player OwnPlayer { get; private set; }
+    public Player LocalPlayer { get; private set; }
     public Status CurrentStatus { get; private set; } = Status.NoConnection;
     [Signal] public delegate void StatusChanged(Status status);
 
@@ -29,18 +29,18 @@ public class Network : Node
     {
         PlayerContainer = GetNode(PlayerContainerPath);
 
-        GetTree().Connect("connected_to_server", this, "OnClientConnected");
-        GetTree().Connect("connection_failed", this, "DisconnectFromServer");
-        GetTree().Connect("server_disconnected", this, "DisconnectFromServer");
+        GetTree().Connect("connected_to_server", this, nameof(OnClientConnected));
+        GetTree().Connect("connection_failed", this, nameof(DisconnectFromServer));
+        GetTree().Connect("server_disconnected", this, nameof(DisconnectFromServer));
 
-        GetTree().Connect("network_peer_connected", this, "OnPeerConnected");
-        GetTree().Connect("network_peer_disconnected", this, "OnPeerDisconnected");
+        GetTree().Connect("network_peer_connected", this, nameof(OnPeerConnected));
+        GetTree().Connect("network_peer_disconnected", this, nameof(OnPeerDisconnected));
     }
 
     public override void _Process(float delta)
     {
-        if (OwnPlayer == null) return;
-        RpcUnreliable("OnPlayerMoved", OwnPlayer.Position);
+        if (LocalPlayer == null) return;
+        RpcUnreliable(nameof(OnPlayerMoved), LocalPlayer.Position);
     }
 
 
@@ -53,7 +53,7 @@ public class Network : Node
         var error = peer.CreateServer(port);
         if (error != Error.Ok) return error;
         GetTree().NetworkPeer = peer;
-        OwnPlayer = FindOwnPlayer();
+        LocalPlayer = FindLocalPlayer();
 
         CurrentStatus = Status.ServerRunning;
         EmitSignal(nameof(StatusChanged), CurrentStatus);
@@ -69,7 +69,7 @@ public class Network : Node
         ((NetworkedMultiplayerENet)GetTree().NetworkPeer).CloseConnection();
         GetTree().NetworkPeer = null;
 
-        OwnPlayer = null;
+        LocalPlayer = null;
         foreach (var player in GetOtherPlayers())
             player.RemoveFromParent();
 
@@ -101,7 +101,7 @@ public class Network : Node
         ((NetworkedMultiplayerENet)GetTree().NetworkPeer).CloseConnection();
         GetTree().NetworkPeer = null;
 
-        OwnPlayer = null;
+        LocalPlayer = null;
         foreach (var player in GetOtherPlayers())
             player.RemoveFromParent();
 
@@ -109,12 +109,12 @@ public class Network : Node
         EmitSignal(nameof(StatusChanged), CurrentStatus);
     }
 
-    private Player FindOwnPlayer()
-        => GetTree().Root.GetChild(0).GetChildren().OfType<Player>().First();
+    public Player FindLocalPlayer()
+        => GetNode<Player>("/root/Game/LocalPlayer");
 
-    private Node2D GetPlayerWithId(int id)
+    public Node2D GetPlayerWithId(int id)
         => PlayerContainer.GetNodeOrNull<Node2D>(id.ToString());
-    private Node2D GetOrCreatePlayerWithId(int id)
+    public Node2D GetOrCreatePlayerWithId(int id)
     {
         var player = GetPlayerWithId(id);
         if (player == null) {
@@ -127,16 +127,14 @@ public class Network : Node
     }
 
     // TODO: This assumes that any node whose name starts with a digit is a player.
-    private IEnumerable<Node2D> GetOtherPlayers()
+    public IEnumerable<Node2D> GetOtherPlayers()
         => PlayerContainer.GetChildren().OfType<Node2D>()
             .Where(node => char.IsDigit(node.Name[0]));
 
 
-    #pragma warning disable IDE0051
-
     private void OnClientConnected()
     {
-        OwnPlayer = FindOwnPlayer();
+        LocalPlayer = FindLocalPlayer();
 
         CurrentStatus = Status.ConnectedToServer;
         EmitSignal(nameof(StatusChanged), CurrentStatus);
