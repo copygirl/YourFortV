@@ -2,8 +2,12 @@ using Godot;
 
 public class EscapeMenu : Control
 {
+    public static EscapeMenu Instance { get; private set; }
+
     [Export] public NodePath ReturnPath { get; set; }
     public Button Return { get; private set; }
+
+    public EscapeMenu() => Instance = this;
 
     public override void _Ready()
     {

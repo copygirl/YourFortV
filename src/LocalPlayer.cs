@@ -26,16 +26,20 @@ public class LocalPlayer : Player
 
     public override void _PhysicsProcess(float delta)
     {
-        var moveDir = Input.GetActionStrength("move_right") - Input.GetActionStrength("move_left");
+        var moveDir     = 0.0F;
+        var jumpPressed = false;
+        if (!EscapeMenu.Instance.Visible) {
+            moveDir     = Input.GetActionStrength("move_right") - Input.GetActionStrength("move_left");
+            jumpPressed = Input.IsActionJustPressed("move_jump");
+        }
+
         Velocity.x = (moveDir != 0) ? Mathf.Lerp(Velocity.x, moveDir * Speed, Acceleration)
                                      : Mathf.Lerp(Velocity.x, 0, Friction);
         Velocity.y += Gravity * delta;
         Velocity = MoveAndSlide(Velocity, Vector2.Up);
 
-        if (Input.IsActionJustPressed("move_jump"))
-            _jumpPressed = DateTime.Now;
-        if (IsOnFloor())
-            _lastOnFloor = DateTime.Now;
+        if (jumpPressed) _jumpPressed = DateTime.Now;
+        if (IsOnFloor()) _lastOnFloor = DateTime.Now;
 
         if (((DateTime.Now - _jumpPressed) <= JumpEarlyTime) &&
             ((DateTime.Now - _lastOnFloor) <= JumpCoyoteTime)) {
