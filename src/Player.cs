@@ -1,42 +1,93 @@
 using Godot;
-using System;
 
-public class Player : KinematicBody2D
+// FIXME: Player name should not be stored in "Name".
+public class Player : KinematicBody2D, IInitializer
 {
-    public TimeSpan JumpEarlyTime { get; } = TimeSpan.FromSeconds(0.2F);
-    public TimeSpan JumpCoyoteTime { get; } = TimeSpan.FromSeconds(0.2F);
+    [Export] public NodePath DisplayNamePath { get; set; }
+    [Export] public NodePath SpritePath { get; set; }
 
-    [Export] public float Speed { get; set; } = 120;
-    [Export] public float JumpSpeed { get; set; } = 180;
-    [Export] public float Gravity { get; set; } = 400;
+    public Label DisplayNameLabel { get; private set; }
+    public Sprite Sprite { get; private set; }
+    public Network Network { get; private set; }
 
-    [Export(PropertyHint.Range, "0,1")]
-    public float Friction { get; set; } = 0.1F;
-    [Export(PropertyHint.Range, "0,1")]
-    public float Acceleration { get; set; } = 0.25F;
+    public bool IsLocal => this is LocalPlayer;
 
-    private Vector2 _velocity = Vector2.Zero;
-    private DateTime? _jumpPressed = null;
-    private DateTime? _lastOnFloor = null;
+    private int _networkId = -1;
+    public int NetworkId {
+        get => _networkId;
+        set => SetNetworkId(value);
+    }
 
-    public override void _PhysicsProcess(float delta)
+    public Color Color {
+        get => Sprite.Modulate;
+        set => SetColor(value);
+    }
+
+    public string DisplayName {
+        get => DisplayNameLabel.Text;
+        set => SetDisplayName(value);
+    }
+
+
+    public void Initialize()
     {
-        var moveDir = Input.GetActionStrength("move_right") - Input.GetActionStrength("move_left");
-        _velocity.x = (moveDir != 0) ? Mathf.Lerp(_velocity.x, moveDir * Speed, Acceleration)
-                                     : Mathf.Lerp(_velocity.x, 0, Friction);
-        _velocity.y += Gravity * delta;
-        _velocity = MoveAndSlide(_velocity, Vector2.Up);
+        DisplayNameLabel = GetNode<Label>(DisplayNamePath);
+        Sprite           = GetNode<Sprite>(SpritePath);
+    }
 
-        if (Input.IsActionJustPressed("move_jump"))
-            _jumpPressed = DateTime.Now;
-        if (IsOnFloor())
-            _lastOnFloor = DateTime.Now;
+    public override void _Ready()
+    {
+        Initialize();
+        Network = GetNode<Network>("/root/Game/Network");
 
-        if (((DateTime.Now - _jumpPressed) <= JumpEarlyTime) &&
-            ((DateTime.Now - _lastOnFloor) <= JumpCoyoteTime)) {
-            _velocity.y  = -JumpSpeed;
-            _jumpPressed = null;
-            _lastOnFloor = null;
+        RsetConfig("position", MultiplayerAPI.RPCMode.Puppetsync);
+        Sprite.RsetConfig("modulate", MultiplayerAPI.RPCMode.Puppetsync);
+        DisplayNameLabel.RsetConfig("text", MultiplayerAPI.RPCMode.Puppetsync);
+    }
+
+    public override void _Process(float delta)
+    {
+        if (GetTree().NetworkPeer != null) {
+            // TODO: Only send position if it changed.
+            // Send unreliable messages while moving, and a reliable once the player stopped.
+            if (GetTree().IsNetworkServer())
+                this.RsetUnreliableExcept(NetworkId, "position", Position);
+            else if (Network.Status == NetworkStatus.ConnectedToServer)
+                RpcUnreliable(nameof(OnPositionChanged), Position);
         }
     }
+    [Master]
+    private void OnPositionChanged(Vector2 value)
+        { if (GetTree().GetRpcSenderId() == NetworkId) Position = value; }
+
+
+    private void SetNetworkId(int value)
+    {
+        _networkId = value;
+        Name = (_networkId > 0) ? value.ToString() : "LocalPlayer";
+    }
+
+    private void SetColor(Color value)
+    {
+        Sprite.Modulate = value;
+        if (IsInsideTree() && GetTree().NetworkPeer != null) {
+            if (GetTree().IsNetworkServer()) Sprite.RsetExcept(NetworkId, "modulate", value);
+            else Rpc(nameof(OnColorChanged), value);
+        }
+    }
+    [Master]
+    private void OnColorChanged(Color value)
+        { if (GetTree().GetRpcSenderId() == NetworkId) Color = value; }
+
+    private void SetDisplayName(string value)
+    {
+        DisplayNameLabel.Text = value;
+        if (IsInsideTree() && GetTree().NetworkPeer != null) {
+            if (GetTree().IsNetworkServer()) DisplayNameLabel.RsetExcept(NetworkId, "text", value);
+            else Rpc(nameof(OnDisplayNameChanged), value);
+        }
+    }
+    [Master]
+    private void OnDisplayNameChanged(string value)
+        { if (GetTree().GetRpcSenderId() == NetworkId) DisplayName = value; }
 }

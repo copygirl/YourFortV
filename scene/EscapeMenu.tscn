@@ -7,6 +7,7 @@
 [ext_resource path="res://src/EscapeMenuAppearance.cs" type="Script" id=5]
 
 [node name="EscapeMenu" type="Control"]
+pause_mode = 2
 anchor_right = 1.0
 anchor_bottom = 1.0
 theme = ExtResource( 1 )
@@ -29,10 +30,10 @@ __meta__ = {
 }
 
 [node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
-margin_left = 198.0
-margin_top = 78.0
-margin_right = 441.0
-margin_bottom = 281.0
+margin_left = 518.0
+margin_top = 258.0
+margin_right = 761.0
+margin_bottom = 461.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer"]
 margin_left = 7.0
@@ -73,9 +74,9 @@ margin_top = 27.0
 margin_right = -4.0
 margin_bottom = -4.0
 script = ExtResource( 5 )
-PlayerNamePath = NodePath("VBoxContainer/ContainerName/Name")
+DisplayNamePath = NodePath("VBoxContainer/ContainerName/DisplayName")
 ColorPreviewPath = NodePath("VBoxContainer/ContainerColor/Preview")
-ColorSliderPath = NodePath("VBoxContainer/ContainerColor/HSlider")
+ColorSliderPath = NodePath("VBoxContainer/ContainerColor/Hue")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance"]
 margin_left = 19.0
@@ -95,7 +96,7 @@ rect_min_size = Vector2( 36, 0 )
 text = "Name:"
 align = 2
 
-[node name="Name" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName"]
+[node name="DisplayName" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName"]
 margin_left = 40.0
 margin_right = 182.0
 margin_bottom = 19.0
@@ -124,7 +125,7 @@ margin_right = 56.0
 margin_bottom = 16.0
 texture = ExtResource( 3 )
 
-[node name="HSlider" type="HSlider" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor"]
+[node name="Hue" type="HSlider" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor"]
 margin_left = 60.0
 margin_right = 182.0
 margin_bottom = 16.0
@@ -318,8 +319,8 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 [connection signal="visibility_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Appearance_visibility_changed"]
-[connection signal="text_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName/Name" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Name_text_changed"]
-[connection signal="value_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor/HSlider" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_HSlider_value_changed"]
+[connection signal="text_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName/DisplayName" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_DisplayName_text_changed"]
+[connection signal="value_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor/Hue" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Hue_value_changed"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer/ServerStartStop" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerStartStop_pressed"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient/ClientDisConnect" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ClientDisConnect_pressed"]
 [connection signal="toggled" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerHideAddress/HideAddress" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_HideAddress_toggled"]

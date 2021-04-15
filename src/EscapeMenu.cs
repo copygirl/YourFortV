@@ -5,7 +5,7 @@ public class EscapeMenu : Control
     [Export] public NodePath ReturnPath { get; set; }
     public Button Return { get; private set; }
 
-    public override void _EnterTree()
+    public override void _Ready()
     {
         Return = GetNode<Button>(ReturnPath);
     }

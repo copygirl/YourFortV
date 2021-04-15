@@ -16,7 +16,7 @@ public class EscapeMenuMultiplayer : Container
 
     public Network Network { get; private set; }
 
-    public override void _EnterTree()
+    public override void _Ready()
     {
         Status           = GetNode<Label>(StatusPath);
         ServerStartStop  = GetNode<Button>(ServerStartStopPath);
@@ -31,33 +31,39 @@ public class EscapeMenuMultiplayer : Container
     }
 
 
-    private void OnNetworkStatusChanged(Network.Status status)
+    private void OnNetworkStatusChanged(NetworkStatus status)
     {
         switch (status) {
-            case Network.Status.NoConnection:
+            case NetworkStatus.NoConnection:
                 Status.Text     = "No Connection";
                 Status.Modulate = Colors.Red;
                 break;
-            case Network.Status.ServerRunning:
+            case NetworkStatus.ServerRunning:
                 Status.Text     = "Server Running";
                 Status.Modulate = Colors.Green;
                 break;
-            case Network.Status.Connecting:
+            case NetworkStatus.Connecting:
                 Status.Text     = "Connecting ...";
                 Status.Modulate = Colors.Yellow;
                 break;
-            case Network.Status.ConnectedToServer:
+            case NetworkStatus.Authenticating:
+                Status.Text     = "Authenticating ...";
+                Status.Modulate = Colors.YellowGreen;
+                break;
+            case NetworkStatus.ConnectedToServer:
                 Status.Text     = "Connected to Server";
                 Status.Modulate = Colors.Green;
                 break;
         }
 
-        ServerPort.Editable = status == Network.Status.NoConnection;
-        ServerStartStop.Text = (status == Network.Status.ServerRunning) ? "Stop Server" : "Start Server";
-        ClientAddress.Editable = status == Network.Status.NoConnection;
-        ClientDisConnect.Text     = (status < Network.Status.Connecting) ? "Connect" : "Disconnect";
-        ClientDisConnect.Disabled = status == Network.Status.ServerRunning;
-        if (Visible) GetTree().Paused = status == Network.Status.NoConnection;
+        var noConnection = status == NetworkStatus.NoConnection;
+        ServerPort.Editable      = noConnection;
+        ServerStartStop.Disabled = noConnection;
+        ClientAddress.Editable   = noConnection;
+        ServerStartStop.Text      = (status == NetworkStatus.ServerRunning) ? "Stop Server" : "Start Server";
+        ClientDisConnect.Text     = (status < NetworkStatus.Connecting) ? "Connect" : "Disconnect";
+        ClientDisConnect.Disabled = status == NetworkStatus.ServerRunning;
+        if (Visible) GetTree().Paused = noConnection;
     }
 
 

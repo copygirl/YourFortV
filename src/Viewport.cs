@@ -8,7 +8,7 @@ public class Viewport : Node
 
     public override void _Ready()
     {
-        GetTree().Connect("screen_resized", this, "OnWindowResized");
+        GetTree().Connect("screen_resized", this, nameof(OnWindowResized));
         OnWindowResized();
     }
 

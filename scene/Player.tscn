@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://ui_theme.tres" type="Theme" id=1]
 [ext_resource path="res://gfx/player.png" type="Texture" id=2]
+[ext_resource path="res://src/Player.cs" type="Script" id=3]
 
 [sub_resource type="CircleShape2D" id=1]
 radius = 8.0
@@ -9,6 +10,9 @@ radius = 8.0
 [node name="Player" type="KinematicBody2D"]
 z_index = 10
 collision_layer = 0
+script = ExtResource( 3 )
+DisplayNamePath = NodePath("DisplayName")
+SpritePath = NodePath("Sprite")
 
 [node name="CircleShape" type="CollisionShape2D" parent="."]
 shape = SubResource( 1 )
@@ -17,7 +21,7 @@ shape = SubResource( 1 )
 z_index = -5
 texture = ExtResource( 2 )
 
-[node name="Name" type="Label" parent="."]
+[node name="DisplayName" type="Label" parent="."]
 modulate = Color( 1, 1, 1, 0.501961 )
 anchor_left = 0.5
 anchor_right = 0.5

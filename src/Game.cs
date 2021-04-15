@@ -3,28 +3,28 @@ using Godot;
 public class Game : Node
 {
     [Export] public Vector2 RoomSize { get; set; } = new Vector2(32, 18) * 16;
+    [Export] public NodePath LocalPlayerPath { get; set; }
+    [Export] public PackedScene BlockScene { get; set; }
 
-    [Export] public PackedScene Player { get; set; }
-    [Export] public PackedScene Block { get; set; }
+    public LocalPlayer LocalPlayer { get; private set; }
+
+    // Using _EnterTree to make sure this code runs before any other.
+    public override void _EnterTree()
+    {
+        GD.Randomize();
+        LocalPlayer = GetNode<LocalPlayer>(LocalPlayerPath);
+    }
 
     public override void _Ready()
     {
-        GD.Randomize();
-        SpawnPlayer();
         SpawnBlocks();
-    }
-
-    private void SpawnPlayer()
-    {
-        var player = (Player)Player.Instance();
-        AddChild(player);
     }
 
     private void SpawnBlocks()
     {
         void SpawnBlockAt(int x, int y)
         {
-            var block = (Node2D)Block.Instance();
+            var block = BlockScene.Init<Node2D>();
             block.Position = new Vector2(x, y);
             AddChild(block);
         }

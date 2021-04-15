@@ -12,16 +12,21 @@
 
 [node name="Game" type="Node"]
 script = ExtResource( 3 )
-Player = ExtResource( 5 )
-Block = ExtResource( 6 )
+LocalPlayerPath = NodePath("Players/LocalPlayer")
+BlockScene = ExtResource( 6 )
 
 [node name="Viewport" type="Node" parent="."]
 script = ExtResource( 7 )
 
 [node name="Network" type="Node" parent="."]
 script = ExtResource( 8 )
-PlayerContainerPath = NodePath("..")
-OtherPlayer = ExtResource( 9 )
+PlayerContainerPath = NodePath("../Players")
+OtherPlayerScene = ExtResource( 9 )
+
+[node name="Players" type="Node" parent="."]
+
+[node name="LocalPlayer" parent="Players" instance=ExtResource( 5 )]
+position = Vector2( 0, -2 )
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
@@ -34,5 +39,4 @@ script = ExtResource( 2 )
 texture = ExtResource( 4 )
 
 [node name="EscapeMenu" parent="HUD" instance=ExtResource( 1 )]
-pause_mode = 2
 visible = false
