@@ -24,7 +24,7 @@ public class Player : KinematicBody2D, IInitializer
         get => Sprite.Modulate;
         set {
             Sprite.Modulate = value;
-            Sprite.Rset(NetworkId, "modulate", nameof(OnColorChanged), value);
+            this.RsetProperty(Sprite, "modulate", nameof(OnColorChanged), value);
         }
     }
 
@@ -32,7 +32,7 @@ public class Player : KinematicBody2D, IInitializer
         get => DisplayNameLabel.Text;
         set {
             DisplayNameLabel.Text = value;
-            DisplayNameLabel.Rset(NetworkId, "text", nameof(OnDisplayNameChanged), value);
+            this.RsetProperty(DisplayNameLabel, "text", nameof(OnDisplayNameChanged), value);
         }
     }
 
@@ -54,11 +54,19 @@ public class Player : KinematicBody2D, IInitializer
     }
 
     public override void _Process(float delta)
-        => this.RsetUnreliable(NetworkId, "position", nameof(OnPositionChanged), Position);
+    {
+        this.RsetPropertyUnreliable(this, "position", nameof(OnPositionChanged), Position);
+
+        if (Network.IsAuthoratative && (Position.y > 9000)) {
+            if (this is LocalPlayer localPlayer) localPlayer.ResetPositionInternal(Vector2.Zero);
+            else RpcId(NetworkId, nameof(LocalPlayer.ResetPosition), Vector2.Zero);
+        }
+    }
+
 
     [Master]
     private void OnPositionChanged(Vector2 value)
-        { if (GetTree().GetRpcSenderId() == NetworkId) Position = value; }
+        { if (GetTree().GetRpcSenderId() == NetworkId) Position = value.Floor(); }
 
     [Master]
     private void OnColorChanged(Color value)

@@ -17,7 +17,7 @@ public class EscapeMenuAppearance : CenterContainer
         ColorPreview = GetNode<TextureRect>(ColorPreviewPath);
         ColorSlider  = GetNode<Slider>(ColorSliderPath);
 
-        ColorSlider.Value = GD.RandRange(0.0, 1.0);
+        ColorSlider.Value = GD.Randf();
         var color = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
         LocalPlayer.Instance.Color = ColorPreview.Modulate = color;
     }

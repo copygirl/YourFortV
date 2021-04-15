@@ -6,5 +6,5 @@
 [node name="LocalPlayer" instance=ExtResource( 1 )]
 script = ExtResource( 3 )
 
-[node name="Camera2D" type="Camera2D" parent="." index="0"]
+[node name="Camera" type="Camera2D" parent="." index="0"]
 current = true

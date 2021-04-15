@@ -18,8 +18,11 @@ public class Network : Node
     public static Network Instance { get; private set; }
     public static NetworkStatus Status { get; private set; } = NetworkStatus.NoConnection;
 
-    public static bool IsServer => Instance.GetTree().IsNetworkServer();
+    public static bool IsMultiplayerReady => (Status == NetworkStatus.ServerRunning) || (Status == NetworkStatus.ConnectedToServer);
+    public static bool IsAuthoratative => Status <= NetworkStatus.ServerRunning;
+    public static bool IsServer => Status == NetworkStatus.ServerRunning;
     public static int LocalNetworkId => Instance.GetTree().GetNetworkUniqueId();
+    public static IEnumerable<Player> Players => Instance._playersById.Values;
 
 
     private readonly Dictionary<int, Player> _playersById = new Dictionary<int, Player>();
@@ -162,6 +165,7 @@ public class Network : Node
         EmitSignal(nameof(StatusChanged), Status);
 
         LocalPlayer.Instance.Position = position;
+        LocalPlayer.Instance.Velocity = Vector2.Zero;
         return LocalPlayer.Instance;
     }
 

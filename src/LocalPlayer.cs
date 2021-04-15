@@ -17,7 +17,7 @@ public class LocalPlayer : Player
     [Export(PropertyHint.Range, "0,1")]
     public float Acceleration { get; set; } = 0.25F;
 
-    private Vector2 _velocity = Vector2.Zero;
+    public Vector2 Velocity = Vector2.Zero;
     private DateTime? _jumpPressed = null;
     private DateTime? _lastOnFloor = null;
 
@@ -27,10 +27,10 @@ public class LocalPlayer : Player
     public override void _PhysicsProcess(float delta)
     {
         var moveDir = Input.GetActionStrength("move_right") - Input.GetActionStrength("move_left");
-        _velocity.x = (moveDir != 0) ? Mathf.Lerp(_velocity.x, moveDir * Speed, Acceleration)
-                                     : Mathf.Lerp(_velocity.x, 0, Friction);
-        _velocity.y += Gravity * delta;
-        _velocity = MoveAndSlide(_velocity, Vector2.Up);
+        Velocity.x = (moveDir != 0) ? Mathf.Lerp(Velocity.x, moveDir * Speed, Acceleration)
+                                     : Mathf.Lerp(Velocity.x, 0, Friction);
+        Velocity.y += Gravity * delta;
+        Velocity = MoveAndSlide(Velocity, Vector2.Up);
 
         if (Input.IsActionJustPressed("move_jump"))
             _jumpPressed = DateTime.Now;
@@ -39,9 +39,18 @@ public class LocalPlayer : Player
 
         if (((DateTime.Now - _jumpPressed) <= JumpEarlyTime) &&
             ((DateTime.Now - _lastOnFloor) <= JumpCoyoteTime)) {
-            _velocity.y  = -JumpSpeed;
+            Velocity.y  = -JumpSpeed;
             _jumpPressed = null;
             _lastOnFloor = null;
         }
     }
+
+    internal void ResetPositionInternal(Vector2 position)
+    {
+        Position = position;
+        Velocity = Vector2.Zero;
+    }
+    [Puppet]
+    internal void ResetPosition(Vector2 position)
+        => ResetPositionInternal(position);
 }

@@ -14,43 +14,40 @@ public static class Extensions
     }
 
 
-    public static void Rset(this Node @this, int except, string property, string method, object value)
+    public static void RsetProperty(this Node @this, Node propertyOwner, string property, string method, object value)
     {
-        if (@this.IsInsideTree() && @this.GetTree().NetworkPeer != null) {
-            if (@this.GetTree().IsNetworkServer())
-                @this.RsetExcept(except, property, value);
-            else if (Network.Status == NetworkStatus.ConnectedToServer)
-                @this.RpcId(1, method, value);
-        }
+        if (!@this.IsInsideTree()) return;
+        if (Network.IsServer) propertyOwner.RsetExcept(@this as Player, property, value);
+        else if (Network.IsMultiplayerReady) @this.RpcId(1, method, value);
     }
 
-    public static void RsetUnreliable(this Node @this, int except, string property, string method, object value)
+    public static void RsetPropertyUnreliable(this Node @this, Node propertyOwner, string property, string method, object value)
     {
-        if (@this.IsInsideTree() && @this.GetTree().NetworkPeer != null) {
-            if (@this.GetTree().IsNetworkServer())
-                @this.RsetUnreliableExcept(except, property, value);
-            else if (Network.Status == NetworkStatus.ConnectedToServer)
-                @this.RpcUnreliableId(1, method, value);
-        }
+        if (!@this.IsInsideTree()) return;
+        if (Network.IsServer) propertyOwner.RsetUnreliableExcept(@this as Player, property, value);
+        else if (Network.IsMultiplayerReady) @this.RpcUnreliableId(1, method, value);
     }
 
 
-    public static void RpcExcept(this Node @this, int except, string method, params object[] args)
+    public static void RpcExcept(this Node @this, Player except, string method, params object[] args)
     {
-        foreach (var peer in @this.GetTree().GetNetworkConnectedPeers())
-            if (peer != except) @this.RpcId(peer, method, args);
+        foreach (var player in Network.Players)
+            if (player != except)
+                @this.RpcId(player.NetworkId, method, args);
     }
 
-    public static void RsetUnreliableExcept(this Node @this, int except, string property, object value)
+    public static void RsetExcept(this Node @this, Player except, string property, object value)
     {
-        foreach (var peer in @this.GetTree().GetNetworkConnectedPeers())
-            if (peer != except) @this.RsetUnreliableId(peer, property, value);
+        foreach (var player in Network.Players)
+            if (player != except)
+                @this.RsetId(player.NetworkId, property, value);
     }
 
-    public static void RsetExcept(this Node @this, int except, string property, object value)
+    public static void RsetUnreliableExcept(this Node @this, Player except, string property, object value)
     {
-        foreach (var peer in @this.GetTree().GetNetworkConnectedPeers())
-            if (peer != except) @this.RsetId(peer, property, value);
+        foreach (var player in Network.Players)
+            if (player != except)
+                @this.RsetUnreliableId(player.NetworkId, property, value);
     }
 }
 
