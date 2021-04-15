@@ -1,8 +1,10 @@
-using Godot;
 using System;
+using Godot;
 
 public class LocalPlayer : Player
 {
+    public static LocalPlayer Instance { get; private set; }
+
     public TimeSpan JumpEarlyTime { get; } = TimeSpan.FromSeconds(0.2F);
     public TimeSpan JumpCoyoteTime { get; } = TimeSpan.FromSeconds(0.2F);
 
@@ -18,6 +20,9 @@ public class LocalPlayer : Player
     private Vector2 _velocity = Vector2.Zero;
     private DateTime? _jumpPressed = null;
     private DateTime? _lastOnFloor = null;
+
+    public override void _EnterTree() => Instance = this;
+    public override void _ExitTree() => Instance = null;
 
     public override void _PhysicsProcess(float delta)
     {

@@ -12,7 +12,6 @@
 
 [node name="Game" type="Node"]
 script = ExtResource( 3 )
-LocalPlayerPath = NodePath("Players/LocalPlayer")
 BlockScene = ExtResource( 6 )
 
 [node name="Viewport" type="Node" parent="."]

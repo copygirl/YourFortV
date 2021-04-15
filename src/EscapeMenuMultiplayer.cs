@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Godot;
 
 public class EscapeMenuMultiplayer : Container
@@ -14,8 +15,6 @@ public class EscapeMenuMultiplayer : Container
     public Button ClientDisConnect { get; private set; }
     public LineEdit ClientAddress { get; private set; }
 
-    public Network Network { get; private set; }
-
     public override void _Ready()
     {
         Status           = GetNode<Label>(StatusPath);
@@ -24,10 +23,9 @@ public class EscapeMenuMultiplayer : Container
         ClientDisConnect = GetNode<Button>(ClientDisConnectPath);
         ClientAddress    = GetNode<LineEdit>(ClientAddressPath);
 
-        Network = GetNode<Network>("/root/Game/Network");
-        Network.Connect(nameof(Network.StatusChanged), this, nameof(OnNetworkStatusChanged));
-        ServerPort.PlaceholderText    = Network.DefaultPort.ToString();
-        ClientAddress.PlaceholderText = $"{Network.DefaultAddress}:{Network.DefaultPort}";
+        Network.Instance.Connect(nameof(Network.StatusChanged), this, nameof(OnNetworkStatusChanged));
+        ServerPort.PlaceholderText    = Network.DEFAULT_PORT.ToString();
+        ClientAddress.PlaceholderText = $"localhost:{Network.DEFAULT_PORT}";
     }
 
 
@@ -57,10 +55,10 @@ public class EscapeMenuMultiplayer : Container
         }
 
         var noConnection = status == NetworkStatus.NoConnection;
-        ServerPort.Editable      = noConnection;
-        ServerStartStop.Disabled = noConnection;
-        ClientAddress.Editable   = noConnection;
-        ServerStartStop.Text      = (status == NetworkStatus.ServerRunning) ? "Stop Server" : "Start Server";
+        ServerPort.Editable = noConnection;
+        ServerStartStop.Text     = (status == NetworkStatus.ServerRunning) ? "Stop Server" : "Start Server";
+        ServerStartStop.Disabled = status > NetworkStatus.ServerRunning;
+        ClientAddress.Editable = noConnection;
         ClientDisConnect.Text     = (status < NetworkStatus.Connecting) ? "Connect" : "Disconnect";
         ClientDisConnect.Disabled = status == NetworkStatus.ServerRunning;
         if (Visible) GetTree().Paused = noConnection;
@@ -70,29 +68,42 @@ public class EscapeMenuMultiplayer : Container
     #pragma warning disable IDE0051
     #pragma warning disable IDE1006
 
+    private static readonly Regex INVALID_CHARS = new Regex(@"[^0-9]");
+    private void _on_ServerPort_text_changed(string text)
+    {
+        var validText = INVALID_CHARS.Replace(text, "");
+        validText = validText.TrimStart('0');
+        if (validText != text) {
+            var previousCaretPos = ServerPort.CaretPosition;
+            ServerPort.Text = validText;
+            ServerPort.CaretPosition = previousCaretPos - (text.Length - validText.Length);
+        }
+    }
+
+
     private void _on_ServerStartStop_pressed()
     {
         if (GetTree().NetworkPeer == null) {
-            var port = Network.DefaultPort;
+            var port = Network.DEFAULT_PORT;
             if (ServerPort.Text.Length > 0)
                 port = ushort.Parse(ServerPort.Text);
-            Network.StartServer(port);
-        } else Network.StopServer();
+            Network.Instance.StartServer(port);
+        } else Network.Instance.StopServer();
     }
 
     private void _on_ClientDisConnect_pressed()
     {
         if (GetTree().NetworkPeer == null) {
-            var address = Network.DefaultAddress;
-            var port    = Network.DefaultPort;
+            var address = "localhost";
+            var port    = Network.DEFAULT_PORT;
             if (ClientAddress.Text.Length > 0) {
                 // TODO: Verify input some more, support IPv6?
                 var split = address.Split(':');
                 address = (split.Length > 1) ? split[0] : address;
                 port    = (split.Length > 1) ? ushort.Parse(split[1]) : port;
             }
-            Network.ConnectToServer(address, port);
-        } else Network.DisconnectFromServer();
+            Network.Instance.ConnectToServer(address, port);
+        } else Network.Instance.DisconnectFromServer();
     }
 
     private void _on_HideAddress_toggled(bool pressed)

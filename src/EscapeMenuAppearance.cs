@@ -7,21 +7,19 @@ public class EscapeMenuAppearance : CenterContainer
     [Export] public NodePath ColorPreviewPath { get; set; }
     [Export] public NodePath ColorSliderPath { get; set; }
 
-    public Game Game { get; private set; }
     public LineEdit DisplayName { get; private set; }
     public TextureRect ColorPreview { get; private set; }
     public Slider ColorSlider { get; private set; }
 
     public override void _Ready()
     {
-        Game         = GetNode<Game>("/root/Game");
         DisplayName  = GetNode<LineEdit>(DisplayNamePath);
         ColorPreview = GetNode<TextureRect>(ColorPreviewPath);
         ColorSlider  = GetNode<Slider>(ColorSliderPath);
 
         ColorSlider.Value = GD.RandRange(0.0, 1.0);
         var color = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
-        Game.LocalPlayer.Color = ColorPreview.Modulate = color;
+        LocalPlayer.Instance.Color = ColorPreview.Modulate = color;
     }
 
 
@@ -48,7 +46,7 @@ public class EscapeMenuAppearance : CenterContainer
     private void _on_Appearance_visibility_changed()
     {
         if (IsVisibleInTree()) return;
-        Game.LocalPlayer.DisplayName = DisplayName.Text;
-        Game.LocalPlayer.Color       = ColorPreview.Modulate;
+        LocalPlayer.Instance.DisplayName = DisplayName.Text;
+        LocalPlayer.Instance.Color       = ColorPreview.Modulate;
     }
 }

@@ -1,6 +1,5 @@
 using Godot;
 
-// FIXME: Player name should not be stored in "Name".
 public class Player : KinematicBody2D, IInitializer
 {
     [Export] public NodePath DisplayNamePath { get; set; }
@@ -15,17 +14,26 @@ public class Player : KinematicBody2D, IInitializer
     private int _networkId = -1;
     public int NetworkId {
         get => _networkId;
-        set => SetNetworkId(value);
+        set {
+            _networkId = value;
+            Name = (_networkId > 0) ? value.ToString() : "LocalPlayer";
+        }
     }
 
     public Color Color {
         get => Sprite.Modulate;
-        set => SetColor(value);
+        set {
+            Sprite.Modulate = value;
+            Sprite.Rset(NetworkId, "modulate", nameof(OnColorChanged), value);
+        }
     }
 
     public string DisplayName {
         get => DisplayNameLabel.Text;
-        set => SetDisplayName(value);
+        set {
+            DisplayNameLabel.Text = value;
+            DisplayNameLabel.Rset(NetworkId, "text", nameof(OnDisplayNameChanged), value);
+        }
     }
 
 
@@ -46,47 +54,16 @@ public class Player : KinematicBody2D, IInitializer
     }
 
     public override void _Process(float delta)
-    {
-        if (GetTree().NetworkPeer != null) {
-            // TODO: Only send position if it changed.
-            // Send unreliable messages while moving, and a reliable once the player stopped.
-            if (GetTree().IsNetworkServer())
-                this.RsetUnreliableExcept(NetworkId, "position", Position);
-            else if (Network.Status == NetworkStatus.ConnectedToServer)
-                RpcUnreliable(nameof(OnPositionChanged), Position);
-        }
-    }
+        => this.RsetUnreliable(NetworkId, "position", nameof(OnPositionChanged), Position);
+
     [Master]
     private void OnPositionChanged(Vector2 value)
         { if (GetTree().GetRpcSenderId() == NetworkId) Position = value; }
 
-
-    private void SetNetworkId(int value)
-    {
-        _networkId = value;
-        Name = (_networkId > 0) ? value.ToString() : "LocalPlayer";
-    }
-
-    private void SetColor(Color value)
-    {
-        Sprite.Modulate = value;
-        if (IsInsideTree() && GetTree().NetworkPeer != null) {
-            if (GetTree().IsNetworkServer()) Sprite.RsetExcept(NetworkId, "modulate", value);
-            else Rpc(nameof(OnColorChanged), value);
-        }
-    }
     [Master]
     private void OnColorChanged(Color value)
         { if (GetTree().GetRpcSenderId() == NetworkId) Color = value; }
 
-    private void SetDisplayName(string value)
-    {
-        DisplayNameLabel.Text = value;
-        if (IsInsideTree() && GetTree().NetworkPeer != null) {
-            if (GetTree().IsNetworkServer()) DisplayNameLabel.RsetExcept(NetworkId, "text", value);
-            else Rpc(nameof(OnDisplayNameChanged), value);
-        }
-    }
     [Master]
     private void OnDisplayNameChanged(string value)
         { if (GetTree().GetRpcSenderId() == NetworkId) DisplayName = value; }

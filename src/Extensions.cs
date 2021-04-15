@@ -14,6 +14,27 @@ public static class Extensions
     }
 
 
+    public static void Rset(this Node @this, int except, string property, string method, object value)
+    {
+        if (@this.IsInsideTree() && @this.GetTree().NetworkPeer != null) {
+            if (@this.GetTree().IsNetworkServer())
+                @this.RsetExcept(except, property, value);
+            else if (Network.Status == NetworkStatus.ConnectedToServer)
+                @this.RpcId(1, method, value);
+        }
+    }
+
+    public static void RsetUnreliable(this Node @this, int except, string property, string method, object value)
+    {
+        if (@this.IsInsideTree() && @this.GetTree().NetworkPeer != null) {
+            if (@this.GetTree().IsNetworkServer())
+                @this.RsetUnreliableExcept(except, property, value);
+            else if (Network.Status == NetworkStatus.ConnectedToServer)
+                @this.RpcUnreliableId(1, method, value);
+        }
+    }
+
+
     public static void RpcExcept(this Node @this, int except, string method, params object[] args)
     {
         foreach (var peer in @this.GetTree().GetNetworkConnectedPeers())

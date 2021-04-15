@@ -1,6 +1,6 @@
-using Godot;
 using System;
 using System.Collections.Generic;
+using Godot;
 
 public enum NetworkStatus
 {
@@ -13,23 +13,29 @@ public enum NetworkStatus
 
 public class Network : Node
 {
-    private readonly Dictionary<int, Player> _playersById = new Dictionary<int, Player>();
+    public const ushort DEFAULT_PORT = 42005;
 
-    [Export] public ushort DefaultPort { get; set; } = 42005;
-    [Export] public string DefaultAddress { get; set; } = "localhost";
+    public static Network Instance { get; private set; }
+    public static NetworkStatus Status { get; private set; } = NetworkStatus.NoConnection;
+
+    public static bool IsServer => Instance.GetTree().IsNetworkServer();
+    public static int LocalNetworkId => Instance.GetTree().GetNetworkUniqueId();
+
+
+    private readonly Dictionary<int, Player> _playersById = new Dictionary<int, Player>();
 
     [Export] public NodePath PlayerContainerPath { get; set; }
     [Export] public PackedScene OtherPlayerScene { get; set; }
 
-    public Game Game { get; private set; }
     public Node PlayerContainer { get; private set; }
 
-    public NetworkStatus Status { get; private set; } = NetworkStatus.NoConnection;
     [Signal] public delegate void StatusChanged(NetworkStatus status);
+
+
+    public Network() => Instance = this;
 
     public override void _Ready()
     {
-        Game            = GetNode<Game>("/root/Game");
         PlayerContainer = GetNode(PlayerContainerPath);
 
         GetTree().Connect("connected_to_server", this, nameof(OnClientConnected));
@@ -46,7 +52,7 @@ public class Network : Node
 
     public void ClearPlayers()
     {
-        Game.LocalPlayer.NetworkId = -1;
+        LocalPlayer.Instance.NetworkId = -1;
         foreach (var player in _playersById.Values)
             if (!player.IsLocal)
                 player.RemoveFromParent();
@@ -66,8 +72,8 @@ public class Network : Node
         Status = NetworkStatus.ServerRunning;
         EmitSignal(nameof(StatusChanged), Status);
 
-        Game.LocalPlayer.NetworkId = 1;
-        _playersById.Add(1, Game.LocalPlayer);
+        LocalPlayer.Instance.NetworkId = 1;
+        _playersById.Add(1, LocalPlayer.Instance);
 
         return Error.Ok;
     }
@@ -120,10 +126,10 @@ public class Network : Node
         EmitSignal(nameof(StatusChanged), Status);
 
         var id = GetTree().GetNetworkUniqueId();
-        Game.LocalPlayer.NetworkId = id;
-        _playersById.Add(id, Game.LocalPlayer);
+        LocalPlayer.Instance.NetworkId = id;
+        _playersById.Add(id, LocalPlayer.Instance);
 
-        Rpc(nameof(OnClientAuthenticate), Game.LocalPlayer.DisplayName, Game.LocalPlayer.Color);
+        Rpc(nameof(OnClientAuthenticate), LocalPlayer.Instance.DisplayName, LocalPlayer.Instance.Color);
     }
 
     [Master]
@@ -155,8 +161,8 @@ public class Network : Node
         Status = NetworkStatus.ConnectedToServer;
         EmitSignal(nameof(StatusChanged), Status);
 
-        Game.LocalPlayer.Position = position;
-        return Game.LocalPlayer;
+        LocalPlayer.Instance.Position = position;
+        return LocalPlayer.Instance;
     }
 
     private Player SpawnOtherPlayerInternal(int id, Vector2 position, string displayName, Color color)

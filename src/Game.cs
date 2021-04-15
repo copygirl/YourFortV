@@ -2,23 +2,19 @@ using Godot;
 
 public class Game : Node
 {
+    public static Game Instance { get; private set; }
+
     [Export] public Vector2 RoomSize { get; set; } = new Vector2(32, 18) * 16;
-    [Export] public NodePath LocalPlayerPath { get; set; }
     [Export] public PackedScene BlockScene { get; set; }
 
-    public LocalPlayer LocalPlayer { get; private set; }
+    public Game() => Instance = this;
 
     // Using _EnterTree to make sure this code runs before any other.
     public override void _EnterTree()
-    {
-        GD.Randomize();
-        LocalPlayer = GetNode<LocalPlayer>(LocalPlayerPath);
-    }
+        => GD.Randomize();
 
     public override void _Ready()
-    {
-        SpawnBlocks();
-    }
+        => SpawnBlocks();
 
     private void SpawnBlocks()
     {
