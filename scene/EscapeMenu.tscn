@@ -7,7 +7,6 @@
 [ext_resource path="res://src/EscapeMenuAppearance.cs" type="Script" id=5]
 
 [node name="EscapeMenu" type="Control"]
-pause_mode = 2
 anchor_right = 1.0
 anchor_bottom = 1.0
 theme = ExtResource( 1 )

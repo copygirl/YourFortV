@@ -13,6 +13,7 @@
 [ext_resource path="res://src/Background.cs" type="Script" id=11]
 
 [node name="Game" type="Node"]
+pause_mode = 2
 script = ExtResource( 3 )
 BlockScene = ExtResource( 6 )
 
@@ -38,6 +39,7 @@ __meta__ = {
 }
 
 [node name="Players" type="Node" parent="."]
+pause_mode = 1
 
 [node name="LocalPlayer" parent="Players" instance=ExtResource( 5 )]
 position = Vector2( 0, -2 )
@@ -45,7 +47,6 @@ position = Vector2( 0, -2 )
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="Cursor" type="Node2D" parent="HUD"]
-pause_mode = 2
 z_index = 1
 script = ExtResource( 2 )
 

@@ -26,8 +26,7 @@ public class EscapeMenu : Control
     public void Open()
     {
         if (Visible) return;
-        if (GetTree().NetworkPeer == null)
-            GetTree().Paused = true;
+        GetTree().Paused = true;
         Return.GrabFocus();
         Visible = true;
     }
@@ -35,8 +34,7 @@ public class EscapeMenu : Control
     public void Close()
     {
         if (!Visible) return;
-        if (GetTree().NetworkPeer == null)
-            GetTree().Paused = false;
+        GetTree().Paused = false;
         Visible = false;
     }
 

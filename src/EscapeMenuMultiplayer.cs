@@ -61,7 +61,6 @@ public class EscapeMenuMultiplayer : Container
         ClientAddress.Editable = noConnection;
         ClientDisConnect.Text     = (status < NetworkStatus.Connecting) ? "Connect" : "Disconnect";
         ClientDisConnect.Disabled = status == NetworkStatus.ServerRunning;
-        if (Visible) GetTree().Paused = noConnection;
     }
 
 

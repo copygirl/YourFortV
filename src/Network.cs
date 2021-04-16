@@ -63,6 +63,17 @@ public class Network : Node
     }
 
 
+    private void ChangeStatus(NetworkStatus status)
+    {
+        if (Status == status) return;
+        Status = status;
+        EmitSignal(nameof(StatusChanged), status);
+
+        PlayerContainer.PauseMode = IsMultiplayerReady
+            ? PauseModeEnum.Process : PauseModeEnum.Stop;
+    }
+
+
     public Error StartServer(ushort port)
     {
         if (GetTree().NetworkPeer != null) throw new InvalidOperationException();
@@ -72,12 +83,10 @@ public class Network : Node
         if (error != Error.Ok) return error;
         GetTree().NetworkPeer = peer;
 
-        Status = NetworkStatus.ServerRunning;
-        EmitSignal(nameof(StatusChanged), Status);
-
         LocalPlayer.Instance.NetworkId = 1;
         _playersById.Add(1, LocalPlayer.Instance);
 
+        ChangeStatus(NetworkStatus.ServerRunning);
         return Error.Ok;
     }
 
@@ -88,10 +97,8 @@ public class Network : Node
         ((NetworkedMultiplayerENet)GetTree().NetworkPeer).CloseConnection();
         GetTree().NetworkPeer = null;
 
-        Status = NetworkStatus.NoConnection;
-        EmitSignal(nameof(StatusChanged), Status);
-
         ClearPlayers();
+        ChangeStatus(NetworkStatus.NoConnection);
     }
 
     public Error ConnectToServer(string address, ushort port)
@@ -103,9 +110,7 @@ public class Network : Node
         if (error != Error.Ok) return error;
         GetTree().NetworkPeer = peer;
 
-        Status = NetworkStatus.Connecting;
-        EmitSignal(nameof(StatusChanged), Status);
-
+        ChangeStatus(NetworkStatus.Connecting);
         return Error.Ok;
     }
 
@@ -116,17 +121,14 @@ public class Network : Node
         ((NetworkedMultiplayerENet)GetTree().NetworkPeer).CloseConnection();
         GetTree().NetworkPeer = null;
 
-        Status = NetworkStatus.NoConnection;
-        EmitSignal(nameof(StatusChanged), Status);
-
+        ChangeStatus(NetworkStatus.NoConnection);
         ClearPlayers();
     }
 
 
     private void OnClientConnected()
     {
-        Status = NetworkStatus.Authenticating;
-        EmitSignal(nameof(StatusChanged), Status);
+        ChangeStatus(NetworkStatus.Authenticating);
 
         var id = GetTree().GetNetworkUniqueId();
         LocalPlayer.Instance.NetworkId = id;
@@ -159,14 +161,12 @@ public class Network : Node
     }
 
     [Puppet]
-    private Player SpawnLocalPlayer(Vector2 position)
+    private void SpawnLocalPlayer(Vector2 position)
     {
-        Status = NetworkStatus.ConnectedToServer;
-        EmitSignal(nameof(StatusChanged), Status);
-
         LocalPlayer.Instance.Position = position;
         LocalPlayer.Instance.Velocity = Vector2.Zero;
-        return LocalPlayer.Instance;
+
+        ChangeStatus(NetworkStatus.ConnectedToServer);
     }
 
     private Player SpawnOtherPlayerInternal(int id, Vector2 position, string displayName, Color color)
