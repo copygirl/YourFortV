@@ -78,7 +78,7 @@ public class Network : Node
         LocalPlayer.Instance.NetworkID = -1;
         foreach (var player in _playersById.Values)
             if (!player.IsLocal)
-                player.RemoveFromParent();
+                player.QueueFree();
         _playersById.Clear();
     }
 
@@ -224,7 +224,7 @@ public class Network : Node
 
     private void OnPeerDisconnected(int id)
     {
-        GetPlayer(id)?.RemoveFromParent();
+        GetPlayer(id)?.QueueFree();
         _playersById.Remove(id);
     }
 }
