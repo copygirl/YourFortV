@@ -97,8 +97,8 @@ public class EscapeMenuMultiplayer : Container
             var port    = Network.DEFAULT_PORT;
             if (ClientAddress.Text.Length > 0) {
                 // TODO: Verify input some more, support IPv6?
-                var split = address.Split(':');
-                address = (split.Length > 1) ? split[0] : address;
+                var split = ClientAddress.Text.Split(':');
+                address = (split.Length > 1) ? split[0] : ClientAddress.Text;
                 port    = (split.Length > 1) ? ushort.Parse(split[1]) : port;
             }
             Network.Instance.ConnectToServer(address, port);
