@@ -7,4 +7,5 @@
 script = ExtResource( 3 )
 
 [node name="Camera" type="Camera2D" parent="." index="0"]
+pause_mode = 2
 current = true
