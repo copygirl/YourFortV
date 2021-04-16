@@ -15,6 +15,7 @@
 [node name="Game" type="Node"]
 pause_mode = 2
 script = ExtResource( 3 )
+BlockContainerPath = NodePath("Blocks")
 BlockScene = ExtResource( 6 )
 
 [node name="Viewport" type="Node" parent="."]
@@ -43,6 +44,8 @@ pause_mode = 1
 
 [node name="LocalPlayer" parent="Players" instance=ExtResource( 5 )]
 position = Vector2( 0, -2 )
+
+[node name="Blocks" type="Node" parent="."]
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

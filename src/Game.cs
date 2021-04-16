@@ -4,7 +4,10 @@ public class Game : Node
 {
     public static Game Instance { get; private set; }
 
+    [Export] public NodePath BlockContainerPath { get; set; }
     [Export] public PackedScene BlockScene { get; set; }
+
+    public Node BlockContainer { get; private set; }
 
     public Game() => Instance = this;
 
@@ -13,15 +16,24 @@ public class Game : Node
         => GD.Randomize();
 
     public override void _Ready()
-        => SpawnBlocks();
+    {
+        BlockContainer = GetNode(BlockContainerPath);
+        SpawnDefaultBlocks();
+    }
 
-    private void SpawnBlocks()
+    public void ClearBlocks()
+    {
+        foreach (var block in BlockContainer.GetChildren())
+            ((Node)block).Free();
+    }
+
+    public void SpawnDefaultBlocks()
     {
         for (var x = -6; x <= 6; x++) {
             var block = BlockScene.Init<Node2D>();
             block.Position = new Vector2(x * 16, 48);
             block.Modulate = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
-            AddChild(block);
+            BlockContainer.AddChild(block);
         }
     }
 }

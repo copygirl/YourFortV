@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 public enum NetworkStatus
@@ -43,10 +44,7 @@ public class Network : Node
     public Node PlayerContainer { get; private set; }
 
 
-    public Network()
-    {
-        Instance = this;
-    }
+    public Network() =>Instance = this;
 
     public override void _Ready()
     {
@@ -65,6 +63,8 @@ public class Network : Node
 
         API.RegisterC2SPacket<ClientAuthPacket>(OnClientAuthPacket);
         API.RegisterS2CPacket<SpawnPlayerPacket>(OnSpawnPlayerPacket);
+        API.RegisterS2CPacket<SpawnBlockPacket>(OnSpawnBlockPacket);
+        API.RegisterS2CPacket<SpawnBlocksPacket>(OnSpawnBlocksPacket);
         Player.RegisterPackets();
     }
 
@@ -73,13 +73,17 @@ public class Network : Node
         => API.OnPacketReceived(id, bytes);
 
 
-    public void ClearPlayers()
+    public void ResetGame()
     {
         LocalPlayer.Instance.NetworkID = -1;
+
+        // Clear other players.
         foreach (var player in _playersById.Values)
-            if (!player.IsLocal)
-                player.QueueFree();
+            if (!player.IsLocal) player.QueueFree();
         _playersById.Clear();
+
+        // Game.Instance.ClearBlocks();
+        // Game.Instance.SpawnDefaultBlocks();
     }
 
     private void ChangeStatus(NetworkStatus status)
@@ -116,7 +120,7 @@ public class Network : Node
         ((NetworkedMultiplayerENet)GetTree().NetworkPeer).CloseConnection();
         GetTree().NetworkPeer = null;
 
-        ClearPlayers();
+        ResetGame();
         ChangeStatus(NetworkStatus.NoConnection);
     }
 
@@ -142,10 +146,7 @@ public class Network : Node
         LocalPlayer.Instance.NetworkID = id;
         _playersById.Add(id, LocalPlayer.Instance);
 
-        API.SendToServer(new ClientAuthPacket {
-            DisplayName = LocalPlayer.Instance.DisplayName,
-            Color       = LocalPlayer.Instance.Color
-        });
+        API.SendToServer(new ClientAuthPacket(LocalPlayer.Instance));
     }
 
     public void DisconnectFromServer()
@@ -156,7 +157,7 @@ public class Network : Node
         GetTree().NetworkPeer = null;
 
         ChangeStatus(NetworkStatus.NoConnection);
-        ClearPlayers();
+        ResetGame();
     }
 
 
@@ -176,27 +177,31 @@ public class Network : Node
 
     private class ClientAuthPacket
     {
-        public string DisplayName { get; set; }
-        public Color Color { get; set; }
+        public string DisplayName { get; }
+        public Color Color { get; }
+        public ClientAuthPacket(Player player)
+            { DisplayName = player.DisplayName; Color = player.Color; }
     }
     private void OnClientAuthPacket(int networkID, ClientAuthPacket packet)
     {
         // Authentication message is only sent once, so once the Player object exists, ignore this message.
         if (GetPlayer(networkID) != null) return;
 
+        API.SendTo(networkID, new SpawnBlocksPacket());
+
         foreach (var player in _playersById.Values)
             API.SendTo(networkID, new SpawnPlayerPacket(player));
+
         var newPlayer = SpawnOtherPlayer(networkID, Vector2.Zero, packet.DisplayName, packet.Color);
         API.SendToEveryone(new SpawnPlayerPacket(newPlayer));
     }
 
-
     private class SpawnPlayerPacket
     {
-        public int NetworkID { get; set; }
-        public Vector2 Position { get; set; }
-        public string DisplayName { get; set; }
-        public Color Color { get; set; }
+        public int NetworkID { get; }
+        public Vector2 Position { get; }
+        public string DisplayName { get; }
+        public Color Color { get; }
 
         public SpawnPlayerPacket(Player player)
         {
@@ -214,6 +219,35 @@ public class Network : Node
             player.Velocity = Vector2.Zero;
             ChangeStatus(NetworkStatus.ConnectedToServer);
         } else SpawnOtherPlayer(packet.NetworkID, packet.Position, packet.DisplayName, packet.Color);
+    }
+
+    private struct SpawnBlockPacket
+    {
+        public Vector2 Position { get; }
+        public Color Color { get; }
+        public SpawnBlockPacket(Node2D block)
+            { Position = block.Position; Color = block.Modulate; }
+    }
+    private void OnSpawnBlockPacket(SpawnBlockPacket packet)
+    {
+        var block = Game.Instance.BlockScene.Init<Node2D>();
+        block.Position = packet.Position;
+        block.Modulate = packet.Color;
+        Game.Instance.BlockContainer.AddChild(block);
+    }
+
+    private class SpawnBlocksPacket
+    {
+        public List<SpawnBlockPacket> Blocks { get; }
+        public SpawnBlocksPacket()
+            => Blocks = Game.Instance.BlockContainer.GetChildren().OfType<Node2D>()
+                .Select(block => new SpawnBlockPacket(block)).ToList();
+    }
+    private void OnSpawnBlocksPacket(SpawnBlocksPacket packet)
+    {
+        Game.Instance.ClearBlocks();
+        foreach (var block in packet.Blocks)
+            OnSpawnBlockPacket(block);
     }
 
 

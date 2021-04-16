@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization;
 using Godot;
 
 [Flags]
@@ -23,13 +21,13 @@ public enum TransferMode
 
 // TODO: Improve performance and type safety of de/serialization.
 // TODO: Support easily spawning and syncronizing objects and their properties.
-public class NetworkAPI
+public partial class NetworkAPI
 {
     private readonly MultiplayerAPI _multiplayerAPI;
     private readonly List<PacketInfo> _packetsById = new List<PacketInfo>();
     private readonly Dictionary<Type, PacketInfo> _packetsByType = new Dictionary<Type, PacketInfo>();
     private readonly Dictionary<Type, INetworkDeSerializer> _deSerializers = new Dictionary<Type, INetworkDeSerializer>();
-    // private readonly List<INetworkDeSerializerMulti> _multiDeSerializers = new List<INetworkDeSerializerMulti>();
+    private readonly List<INetworkDeSerializerGenerator> _deSerializerGenerators = new List<INetworkDeSerializerGenerator>();
 
     private class PacketInfo
     {
@@ -80,15 +78,17 @@ public class NetworkAPI
         RegisterDeSerializer((writer, value) => writer.Write(value.ToRgba32()),
                              reader => new Color(reader.ReadInt32()));
 
-        // TODO: Add handling for Array, List and Dictionary.
+        RegisterDeSerializerGenerator(new DictionaryDeSerializerGenerator());
+        RegisterDeSerializerGenerator(new CollectionDeSerializerGenerator());
+        RegisterDeSerializerGenerator(new ArrayDeSerializerGenerator());
     }
 
     public void RegisterDeSerializer<T>(Action<BinaryWriter, T> serialize, Func<BinaryReader, T> deserialize)
-        => _deSerializers.Add(typeof(T), new SimpleNetworkDeSerializer<T>(serialize, deserialize));
+        => _deSerializers.Add(typeof(T), new SimpleDeSerializer<T>(serialize, deserialize));
     public void RegisterDeSerializer<T>(INetworkDeSerializer deSerializer)
         => _deSerializers.Add(typeof(T), deSerializer);
-    // public void RegisterDeSerializer(INetworkDeSerializerMulti deSerializer)
-    //     => _multiDeSerializers.Add(deSerializer);
+    public void RegisterDeSerializerGenerator(INetworkDeSerializerGenerator deSerializerGenerator)
+        => _deSerializerGenerators.Add(deSerializerGenerator);
 
     public void RegisterS2CPacket<T>(Action<T> action, TransferMode defaultTransferMode = TransferMode.Reliable)
         => RegisterPacket((int _id, T packet) => action(packet), defaultTransferMode, PacketDirection.ServerToClient);
@@ -199,75 +199,10 @@ public class NetworkAPI
             if (!createIfMissing) throw new InvalidOperationException(
                 $"No DeSerializer for type {type} found");
 
-            value = new ComplexNetworkDeSerializer(type);
+            value = _deSerializerGenerators.Select(g => g.GenerateFor(type)).FirstOrDefault(x => x != null);
+            if (value == null) value = new ComplexDeSerializer(type);
             _deSerializers.Add(type, value);
         }
         return value;
     }
-
-    private class SimpleNetworkDeSerializer<T>
-        : INetworkDeSerializer
-    {
-        private readonly Action<BinaryWriter, T> _serialize;
-        private readonly Func<BinaryReader, T> _deserialize;
-        public SimpleNetworkDeSerializer(Action<BinaryWriter, T> serialize, Func<BinaryReader, T> deserialize)
-            { _serialize = serialize; _deserialize = deserialize; }
-        public void Serialize(BinaryWriter writer, object value) => _serialize(writer, (T)value);
-        public object Deserialize(BinaryReader reader) => _deserialize(reader);
-    }
-
-    // private class ArrayNetworkDeSerializer
-    //     : INetworkDeSerializerMulti
-    // {
-    //     public bool Handles(Type type) => type.IsArray;
-
-    //     public void Serialize(BinaryWriter writer, object value)
-    //     {
-    //         var array = (Array)value;
-    //         writer.Write(array.Length);
-    //         var deSerializer = Network.API.GetOrCreateDeserializer(array.GetType().GetElementType());
-    //         foreach (var element in array) deSerializer.Serialize(writer, element);
-    //     }
-
-    //     public object Deserialize(BinaryReader reader)
-    //     {
-    // TODO: This doesn't work. We need the type to initialize the array.
-    //       We may want to generate a new INetworkDeSerializer for each array type..?
-    //     }
-    // }
-
-    private class ComplexNetworkDeSerializer
-        : INetworkDeSerializer
-    {
-        private readonly Type _type;
-        private event Action<BinaryWriter, object> OnSerialize;
-        private event Action<BinaryReader, object> OnDeserialize;
-
-        public ComplexNetworkDeSerializer(Type type)
-        {
-            _type = type;
-            foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
-                var deSerializer = Network.API.GetDeSerializer(field.FieldType, false);
-                OnSerialize += (writer, value) => deSerializer.Serialize(writer, field.GetValue(value));
-                OnDeserialize += (reader, instance) => field.SetValue(instance, deSerializer.Deserialize(reader));
-            }
-            if (OnSerialize == null) throw new InvalidOperationException(
-                $"Unable to create serializer for type {type}");
-        }
-
-        public void Serialize(BinaryWriter writer, object value)
-            => OnSerialize(writer, value);
-        public object Deserialize(BinaryReader reader)
-        {
-            var instance = FormatterServices.GetUninitializedObject(_type);
-            OnDeserialize(reader, instance);
-            return instance;
-        }
-    }
-}
-
-public interface INetworkDeSerializer
-{
-    void Serialize(BinaryWriter writer, object value);
-    object Deserialize(BinaryReader reader);
 }
