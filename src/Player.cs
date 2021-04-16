@@ -40,16 +40,15 @@ public class Player : KinematicBody2D, IInitializer
 
     public override void _Process(float delta)
     {
+        if (Network.IsAuthoratative && (Position.y > 9000)) {
+            Position = Vector2.Zero;
+            if (this is LocalPlayer localPlayer) localPlayer.Velocity = Vector2.Zero;
+            else Network.API.SendTo(this, new PositionChangedPacket(this), TransferMode.Reliable);
+        }
+
         if (Network.IsMultiplayerReady) {
             if (Network.IsServer) Network.API.SendToEveryoneExcept(this, new PositionChangedPacket(this));
             else if (IsLocal) Network.API.SendToServer(new MovePacket(Position));
-        }
-
-        if (Network.IsAuthoratative && (Position.y > 9000)) {
-            if (this is LocalPlayer localPlayer) {
-                localPlayer.Position = Vector2.Zero;
-                localPlayer.Velocity = Vector2.Zero;
-            } else Network.API.SendTo(this, new PositionChangedPacket(this));
         }
     }
 
