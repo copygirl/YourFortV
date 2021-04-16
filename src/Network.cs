@@ -16,13 +16,23 @@ public class Network : Node
     public const ushort DEFAULT_PORT = 42005;
 
     public static Network Instance { get; private set; }
+    public static NetworkAPI API { get; private set; }
     public static NetworkStatus Status { get; private set; } = NetworkStatus.NoConnection;
 
     public static bool IsMultiplayerReady => (Status == NetworkStatus.ServerRunning) || (Status == NetworkStatus.ConnectedToServer);
     public static bool IsAuthoratative => Status <= NetworkStatus.ServerRunning;
     public static bool IsServer => Status == NetworkStatus.ServerRunning;
-    public static int LocalNetworkId => Instance.GetTree().GetNetworkUniqueId();
+    public static bool IsClient => Status > NetworkStatus.Connecting;
+    public static int LocalNetworkID => Instance.GetTree().GetNetworkUniqueId();
     public static IEnumerable<Player> Players => Instance._playersById.Values;
+
+    public static event Action<NetworkStatus> StatusChanged;
+
+    public static Player GetPlayer(int id)
+        => Instance._playersById.TryGetValue(id, out var value) ? value : null;
+    public static Player GetPlayerOrThrow(int id)
+        => GetPlayer(id) ?? throw new ArgumentException(
+            $"No player instance found for ID {id}", nameof(id));
 
 
     private readonly Dictionary<int, Player> _playersById = new Dictionary<int, Player>();
@@ -32,10 +42,11 @@ public class Network : Node
 
     public Node PlayerContainer { get; private set; }
 
-    [Signal] public delegate void StatusChanged(NetworkStatus status);
 
-
-    public Network() => Instance = this;
+    public Network()
+    {
+        Instance = this;
+    }
 
     public override void _Ready()
     {
@@ -47,27 +58,35 @@ public class Network : Node
 
         GetTree().Connect("network_peer_connected", this, nameof(OnPeerConnected));
         GetTree().Connect("network_peer_disconnected", this, nameof(OnPeerDisconnected));
+
+        var multiplayerApi = GetTree().Multiplayer;
+        API = new NetworkAPI(multiplayerApi);
+        multiplayerApi.Connect("network_peer_packet", this, nameof(OnPacketReceived));
+
+        API.RegisterC2SPacket<ClientAuthPacket>(OnClientAuthPacket);
+        API.RegisterS2CPacket<SpawnPlayerPacket>(OnSpawnPlayerPacket);
+        Player.RegisterPackets();
     }
 
+    // Let NetworkAPI handle receiving of custom packages.
+    private void OnPacketReceived(int id, byte[] bytes)
+        => API.OnPacketReceived(id, bytes);
 
-    public Player GetPlayer(int id)
-        => _playersById.TryGetValue(id, out var value) ? value : null;
 
     public void ClearPlayers()
     {
-        LocalPlayer.Instance.NetworkId = -1;
+        LocalPlayer.Instance.NetworkID = -1;
         foreach (var player in _playersById.Values)
             if (!player.IsLocal)
                 player.RemoveFromParent();
         _playersById.Clear();
     }
 
-
     private void ChangeStatus(NetworkStatus status)
     {
         if (Status == status) return;
         Status = status;
-        EmitSignal(nameof(StatusChanged), status);
+        StatusChanged?.Invoke(status);
 
         PlayerContainer.PauseMode = IsMultiplayerReady
             ? PauseModeEnum.Process : PauseModeEnum.Stop;
@@ -83,7 +102,7 @@ public class Network : Node
         if (error != Error.Ok) return error;
         GetTree().NetworkPeer = peer;
 
-        LocalPlayer.Instance.NetworkId = 1;
+        LocalPlayer.Instance.NetworkID = 1;
         _playersById.Add(1, LocalPlayer.Instance);
 
         ChangeStatus(NetworkStatus.ServerRunning);
@@ -101,6 +120,7 @@ public class Network : Node
         ChangeStatus(NetworkStatus.NoConnection);
     }
 
+
     public Error ConnectToServer(string address, ushort port)
     {
         if (GetTree().NetworkPeer != null) throw new InvalidOperationException();
@@ -112,6 +132,20 @@ public class Network : Node
 
         ChangeStatus(NetworkStatus.Connecting);
         return Error.Ok;
+    }
+
+    private void OnClientConnected()
+    {
+        ChangeStatus(NetworkStatus.Authenticating);
+
+        var id = GetTree().GetNetworkUniqueId();
+        LocalPlayer.Instance.NetworkID = id;
+        _playersById.Add(id, LocalPlayer.Instance);
+
+        API.SendToServer(new ClientAuthPacket {
+            DisplayName = LocalPlayer.Instance.DisplayName,
+            Color       = LocalPlayer.Instance.Color
+        });
     }
 
     public void DisconnectFromServer()
@@ -126,64 +160,61 @@ public class Network : Node
     }
 
 
-    private void OnClientConnected()
-    {
-        ChangeStatus(NetworkStatus.Authenticating);
-
-        var id = GetTree().GetNetworkUniqueId();
-        LocalPlayer.Instance.NetworkId = id;
-        _playersById.Add(id, LocalPlayer.Instance);
-
-        Rpc(nameof(OnClientAuthenticate), LocalPlayer.Instance.DisplayName, LocalPlayer.Instance.Color);
-    }
-
-    [Master]
-    private void OnClientAuthenticate(string displayName, Color color)
-    {
-        var id = GetTree().GetRpcSenderId();
-
-        // Authentication message is only sent once, so once the Player object exists, ignore this message.
-        if (GetPlayer(id) != null) return;
-
-        var newPlayer = SpawnOtherPlayerInternal(id, Vector2.Zero, displayName, color);
-        RpcId(id, nameof(SpawnLocalPlayer), newPlayer.Position);
-
-        foreach (var player in _playersById.Values) {
-            if (player == newPlayer) continue;
-
-            // Spawn existing players for the new player.
-            RpcId(id, nameof(SpawnOtherPlayer), player.NetworkId, player.Position, player.DisplayName, player.Color);
-
-            // Spawn new player for existing players.
-            if (!player.IsLocal) // Don't spawn the player for the host, it already called SpawnOtherPlayer itself.
-                RpcId(player.NetworkId, nameof(SpawnOtherPlayer), newPlayer.NetworkId, newPlayer.Position, newPlayer.DisplayName, newPlayer.Color);
-        }
-    }
-
-    [Puppet]
-    private void SpawnLocalPlayer(Vector2 position)
-    {
-        LocalPlayer.Instance.Position = position;
-        LocalPlayer.Instance.Velocity = Vector2.Zero;
-
-        ChangeStatus(NetworkStatus.ConnectedToServer);
-    }
-
-    private Player SpawnOtherPlayerInternal(int id, Vector2 position, string displayName, Color color)
+    private Player SpawnOtherPlayer(int networkID, Vector2 position, string displayName, Color color)
     {
         var player = OtherPlayerScene.Init<Player>();
-        player.NetworkId = id;
+        player.NetworkID   = networkID;
         // TODO: We need to find a way to sync these property automatically.
         player.Position    = position;
         player.DisplayName = displayName;
         player.Color       = color;
-        _playersById.Add(id, player);
+        _playersById.Add(networkID, player);
         PlayerContainer.AddChild(player);
         return player;
     }
-    [Puppet]
-    private void SpawnOtherPlayer(int id, Vector2 position, string displayName, Color color)
-        => SpawnOtherPlayerInternal(id, position, displayName, color);
+
+
+    private class ClientAuthPacket
+    {
+        public string DisplayName { get; set; }
+        public Color Color { get; set; }
+    }
+    private void OnClientAuthPacket(int networkID, ClientAuthPacket packet)
+    {
+        // Authentication message is only sent once, so once the Player object exists, ignore this message.
+        if (GetPlayer(networkID) != null) return;
+
+        foreach (var player in _playersById.Values)
+            API.SendTo(networkID, new SpawnPlayerPacket(player));
+        var newPlayer = SpawnOtherPlayer(networkID, Vector2.Zero, packet.DisplayName, packet.Color);
+        API.SendToEveryone(new SpawnPlayerPacket(newPlayer));
+    }
+
+
+    private class SpawnPlayerPacket
+    {
+        public int NetworkID { get; set; }
+        public Vector2 Position { get; set; }
+        public string DisplayName { get; set; }
+        public Color Color { get; set; }
+
+        public SpawnPlayerPacket(Player player)
+        {
+            NetworkID   = player.NetworkID;
+            Position    = player.Position;
+            DisplayName = player.DisplayName;
+            Color       = player.Color;
+        }
+    }
+    private void OnSpawnPlayerPacket(SpawnPlayerPacket packet)
+    {
+        if (packet.NetworkID == LocalNetworkID) {
+            var player = LocalPlayer.Instance;
+            player.Position = packet.Position;
+            player.Velocity = Vector2.Zero;
+            ChangeStatus(NetworkStatus.ConnectedToServer);
+        } else SpawnOtherPlayer(packet.NetworkID, packet.Position, packet.DisplayName, packet.Color);
+    }
 
 
     private void OnPeerConnected(int id)

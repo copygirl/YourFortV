@@ -23,7 +23,7 @@ public class EscapeMenuMultiplayer : Container
         ClientDisConnect = GetNode<Button>(ClientDisConnectPath);
         ClientAddress    = GetNode<LineEdit>(ClientAddressPath);
 
-        Network.Instance.Connect(nameof(Network.StatusChanged), this, nameof(OnNetworkStatusChanged));
+        Network.StatusChanged += OnNetworkStatusChanged;
         ServerPort.PlaceholderText    = Network.DEFAULT_PORT.ToString();
         ClientAddress.PlaceholderText = $"localhost:{Network.DEFAULT_PORT}";
     }

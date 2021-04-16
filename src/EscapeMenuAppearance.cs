@@ -45,8 +45,9 @@ public class EscapeMenuAppearance : CenterContainer
 
     private void _on_Appearance_visibility_changed()
     {
-        if (IsVisibleInTree()) return;
-        LocalPlayer.Instance.DisplayName = DisplayName.Text;
-        LocalPlayer.Instance.Color       = ColorPreview.Modulate;
+        if (!IsVisibleInTree())
+            Player.ChangeAppearance(LocalPlayer.Instance,
+                DisplayName.Text, ColorPreview.Modulate,
+                Network.IsClient);
     }
 }

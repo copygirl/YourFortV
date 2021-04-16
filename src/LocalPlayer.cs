@@ -48,10 +48,4 @@ public class LocalPlayer : Player
             _lastOnFloor = null;
         }
     }
-
-    internal void ResetPositionInternal(Vector2 position)
-        { Position = position; Velocity = Vector2.Zero; }
-    [Puppet]
-    internal void ResetPosition(Vector2 position)
-        => ResetPositionInternal(position);
 }
