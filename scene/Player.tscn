@@ -17,10 +17,6 @@ SpritePath = NodePath("Sprite")
 [node name="CircleShape" type="CollisionShape2D" parent="."]
 shape = SubResource( 1 )
 
-[node name="Sprite" type="Sprite" parent="."]
-z_index = -5
-texture = ExtResource( 2 )
-
 [node name="DisplayName" type="Label" parent="."]
 modulate = Color( 1, 1, 1, 0.501961 )
 anchor_left = 0.5
@@ -36,3 +32,7 @@ valign = 1
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="Sprite" type="Sprite" parent="."]
+z_index = -5
+texture = ExtResource( 2 )

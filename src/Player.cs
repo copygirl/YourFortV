@@ -91,35 +91,35 @@ public class Player : KinematicBody2D, IInitializer
 
     private class PositionChangedPacket
     {
-        public int ID { get; set; }
-        public Vector2 Position { get; set; }
+        public int ID { get; }
+        public Vector2 Position { get; }
         public PositionChangedPacket(Player player)
             { ID = player.NetworkID; Position = player.Position; }
     }
     private class DisplayNameChangedPacket
     {
-        public int ID { get; set; }
-        public string DisplayName { get; set; }
+        public int ID { get; }
+        public string DisplayName { get; }
         public DisplayNameChangedPacket(Player player)
             { ID = player.NetworkID; DisplayName = player.DisplayName; }
     }
     private class ColorChangedPacket
     {
-        public int ID { get; set; }
-        public Color Color { get; set; }
+        public int ID { get; }
+        public Color Color { get; }
         public ColorChangedPacket(Player player)
             { ID = player.NetworkID; Color = player.Color; }
     }
 
     private class MovePacket
     {
-        public Vector2 Position { get; set; }
+        public Vector2 Position { get; }
         public MovePacket(Vector2 position) => Position = position;
     }
     private class ChangeAppearancePacket
     {
-        public string DisplayName { get; set; }
-        public Color Color { get; set; }
+        public string DisplayName { get; }
+        public Color Color { get; }
         public ChangeAppearancePacket(string displayName, Color color)
             { DisplayName = displayName; Color = color; }
     }

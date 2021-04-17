@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Godot;
 
 public enum NetworkStatus
@@ -63,9 +62,9 @@ public class Network : Node
 
         API.RegisterC2SPacket<ClientAuthPacket>(OnClientAuthPacket);
         API.RegisterS2CPacket<SpawnPlayerPacket>(OnSpawnPlayerPacket);
-        API.RegisterS2CPacket<SpawnBlockPacket>(OnSpawnBlockPacket);
-        API.RegisterS2CPacket<SpawnBlocksPacket>(OnSpawnBlocksPacket);
         Player.RegisterPackets();
+        CreativeBuilding.RegisterPackets();
+        BlockPackets.Register();
     }
 
     // Let NetworkAPI handle receiving of custom packages.
@@ -75,7 +74,7 @@ public class Network : Node
 
     public void ResetGame()
     {
-        LocalPlayer.Instance.NetworkID = -1;
+        Game.LocalPlayer.NetworkID = -1;
 
         // Clear other players.
         foreach (var player in _playersById.Values)
@@ -106,8 +105,8 @@ public class Network : Node
         if (error != Error.Ok) return error;
         GetTree().NetworkPeer = peer;
 
-        LocalPlayer.Instance.NetworkID = 1;
-        _playersById.Add(1, LocalPlayer.Instance);
+        Game.LocalPlayer.NetworkID = 1;
+        _playersById.Add(1, Game.LocalPlayer);
 
         ChangeStatus(NetworkStatus.ServerRunning);
         return Error.Ok;
@@ -143,10 +142,10 @@ public class Network : Node
         ChangeStatus(NetworkStatus.Authenticating);
 
         var id = GetTree().GetNetworkUniqueId();
-        LocalPlayer.Instance.NetworkID = id;
-        _playersById.Add(id, LocalPlayer.Instance);
+        Game.LocalPlayer.NetworkID = id;
+        _playersById.Add(id, Game.LocalPlayer);
 
-        API.SendToServer(new ClientAuthPacket(LocalPlayer.Instance));
+        API.SendToServer(new ClientAuthPacket(Game.LocalPlayer));
     }
 
     public void DisconnectFromServer()
@@ -214,40 +213,11 @@ public class Network : Node
     private void OnSpawnPlayerPacket(SpawnPlayerPacket packet)
     {
         if (packet.NetworkID == LocalNetworkID) {
-            var player = LocalPlayer.Instance;
+            var player = Game.LocalPlayer;
             player.Position = packet.Position;
             player.Velocity = Vector2.Zero;
             ChangeStatus(NetworkStatus.ConnectedToServer);
         } else SpawnOtherPlayer(packet.NetworkID, packet.Position, packet.DisplayName, packet.Color);
-    }
-
-    private struct SpawnBlockPacket
-    {
-        public Vector2 Position { get; }
-        public Color Color { get; }
-        public SpawnBlockPacket(Node2D block)
-            { Position = block.Position; Color = block.Modulate; }
-    }
-    private void OnSpawnBlockPacket(SpawnBlockPacket packet)
-    {
-        var block = Game.Instance.BlockScene.Init<Node2D>();
-        block.Position = packet.Position;
-        block.Modulate = packet.Color;
-        Game.Instance.BlockContainer.AddChild(block);
-    }
-
-    private class SpawnBlocksPacket
-    {
-        public List<SpawnBlockPacket> Blocks { get; }
-        public SpawnBlocksPacket()
-            => Blocks = Game.Instance.BlockContainer.GetChildren().OfType<Node2D>()
-                .Select(block => new SpawnBlockPacket(block)).ToList();
-    }
-    private void OnSpawnBlocksPacket(SpawnBlocksPacket packet)
-    {
-        Game.Instance.ClearBlocks();
-        foreach (var block in packet.Blocks)
-            OnSpawnBlockPacket(block);
     }
 
 

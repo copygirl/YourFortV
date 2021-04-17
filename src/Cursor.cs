@@ -17,6 +17,6 @@ public class Cursor : Node2D
 
     public override void _Process(float delta)
     {
-        Position = GetGlobalMousePosition();
+        Position = GetGlobalMousePosition() - GetViewport().CanvasTransform.origin;
     }
 }

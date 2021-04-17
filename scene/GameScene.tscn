@@ -12,10 +12,11 @@
 [ext_resource path="res://gfx/background.png" type="Texture" id=10]
 [ext_resource path="res://src/Background.cs" type="Script" id=11]
 
-[node name="Game" type="Node"]
+[node name="Game" type="Node2D"]
 pause_mode = 2
 script = ExtResource( 3 )
-BlockContainerPath = NodePath("Blocks")
+CursorPath = NodePath("CursorLayer/Cursor")
+BlockContainerPath = NodePath("World/Blocks")
 BlockScene = ExtResource( 6 )
 
 [node name="Viewport" type="Node" parent="."]
@@ -23,7 +24,7 @@ script = ExtResource( 7 )
 
 [node name="Network" type="Node" parent="."]
 script = ExtResource( 8 )
-PlayerContainerPath = NodePath("../Players")
+PlayerContainerPath = NodePath("../World/Players")
 OtherPlayerScene = ExtResource( 9 )
 
 [node name="Background" type="TextureRect" parent="."]
@@ -39,22 +40,25 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Players" type="Node" parent="."]
+[node name="World" type="Node" parent="."]
+
+[node name="Players" type="Node" parent="World"]
 pause_mode = 1
 
-[node name="LocalPlayer" parent="Players" instance=ExtResource( 5 )]
-position = Vector2( 0, -2 )
+[node name="LocalPlayer" parent="World/Players" instance=ExtResource( 5 )]
 
-[node name="Blocks" type="Node" parent="."]
+[node name="Blocks" type="Node" parent="World"]
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
-[node name="Cursor" type="Node2D" parent="HUD"]
-z_index = 1
-script = ExtResource( 2 )
-
-[node name="Sprite" type="Sprite" parent="HUD/Cursor"]
-texture = ExtResource( 4 )
-
 [node name="EscapeMenu" parent="HUD" instance=ExtResource( 1 )]
 visible = false
+
+[node name="CursorLayer" type="CanvasLayer" parent="."]
+layer = 2
+follow_viewport_enable = true
+
+[node name="Cursor" type="Sprite" parent="CursorLayer"]
+z_index = 1000
+texture = ExtResource( 4 )
+script = ExtResource( 2 )

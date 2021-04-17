@@ -1,16 +1,15 @@
 using System;
 using Godot;
 
+// TODO: Implement "low jumps" activated by releasing the jump button early.
 public class LocalPlayer : Player
 {
-    public static LocalPlayer Instance { get; private set; }
-
     public TimeSpan JumpEarlyTime { get; } = TimeSpan.FromSeconds(0.2F);
     public TimeSpan JumpCoyoteTime { get; } = TimeSpan.FromSeconds(0.2F);
 
-    [Export] public float Speed { get; set; } = 120;
-    [Export] public float JumpSpeed { get; set; } = 180;
-    [Export] public float Gravity { get; set; } = 400;
+    [Export] public float MovementSpeed { get; set; } = 160;
+    [Export] public float JumpVelocity { get; set; } = 240;
+    [Export] public float Gravity { get; set; } = 480;
 
     [Export(PropertyHint.Range, "0,1")]
     public float Friction { get; set; } = 0.1F;
@@ -21,8 +20,8 @@ public class LocalPlayer : Player
     private DateTime? _jumpPressed = null;
     private DateTime? _lastOnFloor = null;
 
-    public override void _EnterTree() => Instance = this;
-    public override void _ExitTree() => Instance = null;
+    public override void _EnterTree() => Game.LocalPlayer = this;
+    public override void _ExitTree() => Game.LocalPlayer = null;
 
     public override void _PhysicsProcess(float delta)
     {
@@ -33,7 +32,7 @@ public class LocalPlayer : Player
             jumpPressed = Input.IsActionJustPressed("move_jump");
         }
 
-        Velocity.x = (moveDir != 0) ? Mathf.Lerp(Velocity.x, moveDir * Speed, Acceleration)
+        Velocity.x = (moveDir != 0) ? Mathf.Lerp(Velocity.x, moveDir * MovementSpeed, Acceleration)
                                      : Mathf.Lerp(Velocity.x, 0, Friction);
         Velocity.y += Gravity * delta;
         Velocity = MoveAndSlide(Velocity, Vector2.Up);
@@ -43,7 +42,7 @@ public class LocalPlayer : Player
 
         if (((DateTime.Now - _jumpPressed) <= JumpEarlyTime) &&
             ((DateTime.Now - _lastOnFloor) <= JumpCoyoteTime)) {
-            Velocity.y  = -JumpSpeed;
+            Velocity.y  = -JumpVelocity;
             _jumpPressed = null;
             _lastOnFloor = null;
         }

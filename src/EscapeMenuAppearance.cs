@@ -19,7 +19,7 @@ public class EscapeMenuAppearance : CenterContainer
 
         ColorSlider.Value = GD.Randf();
         var color = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
-        LocalPlayer.Instance.Color = ColorPreview.Modulate = color;
+        Game.LocalPlayer.Color = ColorPreview.Modulate = color;
     }
 
 
@@ -46,7 +46,7 @@ public class EscapeMenuAppearance : CenterContainer
     private void _on_Appearance_visibility_changed()
     {
         if (!IsVisibleInTree())
-            Player.ChangeAppearance(LocalPlayer.Instance,
+            Player.ChangeAppearance(Game.LocalPlayer,
                 DisplayName.Text, ColorPreview.Modulate,
                 Network.IsClient);
     }
