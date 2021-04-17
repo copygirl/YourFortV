@@ -15,7 +15,7 @@ _global_script_class_icons={
 
 [application]
 
-config/name="YourFort V"
+config/name="YourFortV"
 run/main_scene="res://scene/GameScene.tscn"
 boot_splash/image="res://gfx/icon.png"
 boot_splash/use_filter=false
@@ -26,10 +26,6 @@ config/icon="res://gfx/icon.png"
 window/size/width=1280
 window/size/height=720
 window/stretch/mode="viewport"
-
-[gdnative]
-
-singletons=[  ]
 
 [importer_defaults]
 
