@@ -101,6 +101,19 @@ public static class NetworkSync
         NetworkPackets.Send(server, new []{ networkID }, packet);
     }
 
+    internal static void ClearAllObjects()
+    {
+        foreach (var (node, _) in _statusByObject) {
+            if (!Godot.Object.IsInstanceValid(node)) continue;
+            node.GetParent().RemoveChild(node);
+            node.QueueFree();
+        }
+
+        _statusByObject.Clear();
+        _statusBySyncID.Clear();
+        _dirtyObjects.Clear();
+        _syncIDCounter = 1;
+    }
 
     public static uint GetSyncID(this Node obj)
         => GetSyncStatus(obj).SyncID;

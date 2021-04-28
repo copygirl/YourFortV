@@ -16,12 +16,16 @@ public class IntegratedServer : Node
         _sceneTree.CurrentScene = scene;
 
         Server = _sceneTree.Root.GetChild<Server>(0);
+        // Spawn default blocks.
+        for (var x = -6; x <= 6; x++) {
+            var block = Server.Spawn<Block>();
+            block.Position    = new BlockPos(x, 3);
+            block.Color       = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
+            block.Unbreakable = true;
+        }
     }
 
     public override void _Process(float delta) => _sceneTree.Idle(delta);
     public override void _PhysicsProcess(float delta) => _sceneTree.Iteration(delta);
     public override void _ExitTree() => _sceneTree.Finish();
-
-    public void Start(ushort port) => Server.Start(port);
-    public void Stop() => Server.Stop();
 }

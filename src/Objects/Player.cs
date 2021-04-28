@@ -12,7 +12,7 @@ public class Player : KinematicBody2D, IInitializer
     public Sprite Sprite { get; private set; }
 
 
-    public bool IsLocal { get; private set; }
+    public bool IsLocal { get; private set; } = false;
 
     [SyncProperty]
     public new Vector2 Position {
@@ -61,7 +61,7 @@ public class Player : KinematicBody2D, IInitializer
         if ((Position.y > 9000) && (this.GetGame() is Server server))
             this.RPC(new []{ server.GetNetworkID(this) }, ResetPosition, Vector2.Zero);
 
-        this.GetClient()?.RPC(Move, Position);
+        if (IsLocal) this.GetClient()?.RPC(Move, Position);
     }
 
     public override void _PhysicsProcess(float delta)

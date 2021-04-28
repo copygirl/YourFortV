@@ -1,14 +1,18 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using static Godot.NetworkedMultiplayerPeer;
 
 public class Client : Game
 {
     [Export] public NodePath CursorPath { get; set; }
     public Cursor Cursor { get; private set; }
 
-    public event Action OnConnected;
-    public event Action OnDisconnected;
+    public ConnectionStatus Status => CustomMultiplayer.NetworkPeer?.GetConnectionStatus() ?? ConnectionStatus.Disconnected;
+
+    public event Action Connected;
+    public event Action Disconnected;
+    public event Action<ConnectionStatus> StatusChanged;
 
     public Client()
     {
@@ -36,10 +40,13 @@ public class Client : Game
     {
         if (CustomMultiplayer.NetworkPeer != null)
             throw new InvalidOperationException("Client connection is already open");
-        var peer = new NetworkedMultiplayerENet();
+
+        var peer  = new NetworkedMultiplayerENet();
         var error = peer.CreateClient(address, port);
         if (error != Error.Ok) throw new Exception($"Error when connecting: {error}");
         CustomMultiplayer.NetworkPeer = peer;
+
+        StatusChanged?.Invoke(Status);
     }
 
     public void Disconnect()
@@ -47,12 +54,17 @@ public class Client : Game
         if (CustomMultiplayer.NetworkPeer == null) return;
         ((NetworkedMultiplayerENet)CustomMultiplayer.NetworkPeer).CloseConnection();
         CustomMultiplayer.NetworkPeer = null;
-        OnDisconnected?.Invoke();
+
+        Disconnected?.Invoke();
+        StatusChanged?.Invoke(Status);
     }
 
 
     private void OnConnectedToServer()
-        => OnConnected?.Invoke();
+    {
+        Connected?.Invoke();
+        StatusChanged?.Invoke(Status);
+    }
 
     private void OnPacketReceived(int id, byte[] bytes)
     {

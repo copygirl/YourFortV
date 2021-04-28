@@ -184,12 +184,12 @@ public class DictionaryDeSerializerGenerator
         private readonly IDeSerializer _valueDeSerializer =
             DeSerializerRegistry.Get<TKey>(true);
 
-        public override void Serialize(Game game, BinaryWriter writer, TDictionary value)
+        public override void Serialize(Game game, BinaryWriter writer, TDictionary dict)
         {
-            writer.Write(value.Count);
-            foreach (var element in value) {
-                _keyDeSerializer.Serialize(game, writer, element.Key);
-                _valueDeSerializer.Serialize(game, writer, element.Value);
+            writer.Write(dict.Count);
+            foreach (var (key, value) in dict) {
+                _keyDeSerializer.Serialize(game, writer, key);
+                _valueDeSerializer.Serialize(game, writer, value);
             }
         }
 
@@ -222,7 +222,12 @@ public class SyncedObjectDeSerializerGenerator
         public override void Serialize(Game game, BinaryWriter writer, TObj value)
             => writer.Write(value.GetSyncID());
         public override TObj Deserialize(Game game, BinaryReader reader)
-            => (TObj)game.GetObjectBySyncID(reader.ReadUInt32());
+        {
+            var id    = reader.ReadUInt32();
+            var value = (TObj)game.GetObjectBySyncID(id);
+            if (value == null) throw new Exception($"Could not find synced object of type {typeof(TObj)} with ID {id}");
+            return value;
+        }
     }
 }
 

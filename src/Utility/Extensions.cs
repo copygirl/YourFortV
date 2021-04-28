@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 
 public static class Extensions
@@ -16,6 +17,10 @@ public static class Extensions
         (instance as IInitializer)?.Initialize();
         return instance;
     }
+
+    public static void Deconstruct<TKey, TValue>(
+            this KeyValuePair<TKey, TValue> kvp, out TKey key, out TValue value)
+        { key = kvp.Key; value = kvp.Value; }
 }
 
 public interface IInitializer

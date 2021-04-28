@@ -11,6 +11,5 @@ BlockContainerPath = NodePath("World/Blocks")
 [node name="World" type="Node" parent="."]
 
 [node name="Players" type="Node" parent="World"]
-pause_mode = 1
 
 [node name="Blocks" type="Node" parent="World"]

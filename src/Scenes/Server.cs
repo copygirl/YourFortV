@@ -8,6 +8,13 @@ public class Server : Game
     private readonly Dictionary<NetworkID, Player> _playersByNetworkID = new Dictionary<NetworkID, Player>();
     private readonly Dictionary<Player, NetworkID> _networkIDByPlayer = new Dictionary<Player, NetworkID>();
 
+    private Player _localPlayer = null;
+    private bool _isLocalPlayerConnected = false;
+
+    public NetworkedMultiplayerENet Peer => (NetworkedMultiplayerENet)CustomMultiplayer.NetworkPeer;
+    public bool IsRunning => Peer != null;
+    public bool IsSingleplayer { get; private set; }
+
     public Server()
     {
         CustomMultiplayer = new MultiplayerAPI { RootNode = this };
@@ -24,30 +31,48 @@ public class Server : Game
     }
 
 
-    public void Start(ushort port)
+    public ushort StartSingleplayer()
     {
-        if (CustomMultiplayer.NetworkPeer != null)
-            throw new InvalidOperationException("Server is already running");
-        var peer  = new NetworkedMultiplayerENet();
-        var error = peer.CreateServer(port);
-        if (error != Error.Ok) throw new Exception($"Error when starting the server: {error}");
-        CustomMultiplayer.NetworkPeer = peer;
-
-        // Spawn default blocks.
-        for (var x = -6; x <= 6; x++) {
-            var block = this.Spawn<Block>();
-            block.Position    = new BlockPos(x, 3);
-            block.Color       = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
-            block.Unbreakable = true;
+        for (var retries = 0; ; retries++) {
+            try {
+                IsSingleplayer = true;
+                // TODO: When `get_local_port` is available, just use port 0 for an auto-assigned port.
+                //       Also see this PR: https://github.com/godotengine/godot/pull/48235
+                var port = (ushort)GD.RandRange(42000, 43000);
+                Start(port, "127.0.0.1", 1);
+                return port;
+            } catch (Exception ex) {
+                // Do throw the "Server is already running" exception.
+                // 3 retries should be well enough to find a random unused port.
+                if ((ex is InvalidOperationException) || (retries == 2)) throw;
+            }
         }
+    }
+    public void Start(ushort port)
+        => Start(port, "*", 32);
+    private void Start(ushort port, string bindIP, int maxClients)
+    {
+        if (IsRunning) throw new InvalidOperationException("Server is already running");
+
+        var peer = new NetworkedMultiplayerENet();
+        peer.SetBindIp(bindIP);
+        peer.ServerRelay = false;
+
+        var error = peer.CreateServer(port, maxClients);
+        if (error != Error.Ok) throw new Exception($"Error when starting the server: {error}");
+
+        CustomMultiplayer.NetworkPeer = peer;
     }
 
     public void Stop()
     {
-        if (CustomMultiplayer.NetworkPeer != null)
-            throw new InvalidOperationException("Server is not running");
-        ((NetworkedMultiplayerENet)CustomMultiplayer.NetworkPeer).CloseConnection();
+        if (!IsRunning) throw new InvalidOperationException("Server is not running");
+
+        Peer.CloseConnection();
         CustomMultiplayer.NetworkPeer = null;
+
+        IsSingleplayer = false;
+        _isLocalPlayerConnected = false;
     }
 
 
@@ -60,15 +85,34 @@ public class Server : Game
     private void OnPeerConnected(int id)
     {
         var networkID = new NetworkID(id);
-        NetworkSync.SendAllObjects(this, networkID);
 
-        var player = this.Spawn<Player>();
-        player.Position = Vector2.Zero;
-        player.Color    = Colors.Red;
+        if (IsSingleplayer) {
+            if (Peer.GetPeerAddress(id) != "127.0.0.1")
+                { Peer.DisconnectPeer(id, true); return; }
+            CustomMultiplayer.RefuseNewNetworkConnections = true;
+        }
 
-        _playersByNetworkID.Add(networkID, player);
-        _networkIDByPlayer.Add(player, networkID);
+        Player player;
+        if ((_localPlayer != null) && !_isLocalPlayerConnected &&
+            (Peer.GetPeerAddress(id) == "127.0.0.1")) {
+            player = _localPlayer;
+            _isLocalPlayerConnected = true;
 
+            var oldNetworkID = GetNetworkID(player);
+            _playersByNetworkID.Remove(oldNetworkID);
+            _playersByNetworkID.Add(networkID, player);
+            _networkIDByPlayer[player] = networkID;
+        } else {
+            NetworkSync.SendAllObjects(this, networkID);
+            player = this.Spawn<Player>();
+            player.Position = Vector2.Zero;
+            player.Color    = Colors.Red;
+
+            _playersByNetworkID.Add(networkID, player);
+            _networkIDByPlayer.Add(player, networkID);
+        }
+
+        if (IsSingleplayer) _localPlayer = player;
         player.RPC(new []{ networkID }, player.SetLocal);
     }
 
@@ -76,6 +120,10 @@ public class Server : Game
     {
         var networkID = new NetworkID(id);
         var player    = GetPlayer(networkID);
+
+        // Local player stays around for reconnecting.
+        if (_localPlayer == player) return;
+
         player.Destroy();
         _playersByNetworkID.Remove(networkID);
         _networkIDByPlayer.Remove(player);

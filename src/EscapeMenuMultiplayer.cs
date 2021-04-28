@@ -1,5 +1,7 @@
+using System;
 using System.Text.RegularExpressions;
 using Godot;
+using static Godot.NetworkedMultiplayerPeer;
 
 public class EscapeMenuMultiplayer : Container
 {
@@ -17,7 +19,7 @@ public class EscapeMenuMultiplayer : Container
     public Button ClientDisConnect { get; private set; }
     public LineEdit ClientAddress { get; private set; }
 
-    public IntegratedServer Server { get; private set; }
+    public IntegratedServer IntegratedServer { get; private set; }
 
     public override void _Ready()
     {
@@ -30,54 +32,57 @@ public class EscapeMenuMultiplayer : Container
         ServerPort.PlaceholderText    = DEFAULT_PORT.ToString();
         ClientAddress.PlaceholderText = $"localhost:{DEFAULT_PORT}";
 
+        this.GetClient().StatusChanged += OnStatusChanged;
         CallDeferred(nameof(SetupIntegratedServer));
     }
     private void SetupIntegratedServer()
     {
-        Server = new IntegratedServer();
-        this.GetClient().AddChild(Server);
+        IntegratedServer = new IntegratedServer();
+        this.GetClient().AddChild(IntegratedServer);
         CallDeferred(nameof(StartIntegratedServerAndConnect));
     }
     private void StartIntegratedServerAndConnect()
     {
-        Server.Start(DEFAULT_PORT);
-        this.GetClient().Connect("localhost", DEFAULT_PORT);
+        var port = IntegratedServer.Server.StartSingleplayer();
+        this.GetClient().Connect("127.0.0.1", port);
     }
 
+    private void OnStatusChanged(ConnectionStatus status)
+    {
+        switch (status) {
+            case ConnectionStatus.Disconnected:
+                Status.Text     = "Disconnected";
+                Status.Modulate = Colors.Red;
+                break;
+            case ConnectionStatus.Connecting:
+                Status.Text     = "Connecting ...";
+                Status.Modulate = Colors.Yellow;
+                break;
+            case ConnectionStatus.Connected:
+                if (IntegratedServer == null) {
+                    Status.Text     = "Connected!";
+                    Status.Modulate = Colors.Green;
+                } else if (IntegratedServer.Server.IsSingleplayer) {
+                    Status.Text     = "Singleplayer";
+                    Status.Modulate = Colors.White;
+                } else {
+                    Status.Text     = "Server Running";
+                    Status.Modulate = Colors.Green;
+                }
+                break;
+        }
 
-    // private void OnNetworkStatusChanged(NetworkStatus status)
-    // {
-    //     switch (status) {
-    //         case NetworkStatus.NoConnection:
-    //             Status.Text     = "No Connection";
-    //             Status.Modulate = Colors.Red;
-    //             break;
-    //         case NetworkStatus.ServerRunning:
-    //             Status.Text     = "Server Running";
-    //             Status.Modulate = Colors.Green;
-    //             break;
-    //         case NetworkStatus.Connecting:
-    //             Status.Text     = "Connecting ...";
-    //             Status.Modulate = Colors.Yellow;
-    //             break;
-    //         case NetworkStatus.Authenticating:
-    //             Status.Text     = "Authenticating ...";
-    //             Status.Modulate = Colors.YellowGreen;
-    //             break;
-    //         case NetworkStatus.ConnectedToServer:
-    //             Status.Text     = "Connected to Server";
-    //             Status.Modulate = Colors.Green;
-    //             break;
-    //     }
+        ServerPort.Editable      = IntegratedServer != null;
+        ServerOpenClose.Disabled = IntegratedServer == null;
+        ServerOpenClose.Text     = (IntegratedServer?.Server.IsSingleplayer == false) ? "Close Server" : "Open Server";
+        ClientDisConnect.Text = ((IntegratedServer != null) || (status == ConnectionStatus.Disconnected)) ? "Connect" : "Disconnect";
 
-    //     var noConnection = status == NetworkStatus.NoConnection;
-    //     ServerPort.Editable = noConnection;
-    //     ServerOpenClose.Text     = (status == NetworkStatus.ServerRunning) ? "Stop Server" : "Start Server";
-    //     ServerOpenClose.Disabled = status > NetworkStatus.ServerRunning;
-    //     ClientAddress.Editable = noConnection;
-    //     ClientDisConnect.Text     = (status < NetworkStatus.Connecting) ? "Connect" : "Disconnect";
-    //     ClientDisConnect.Disabled = status == NetworkStatus.ServerRunning;
-    // }
+        var pauseMode = (IntegratedServer?.Server.IsSingleplayer == true) ? PauseModeEnum.Stop : PauseModeEnum.Process;
+        this.GetClient().GetNode("World").PauseMode = pauseMode;
+        if (IntegratedServer != null) IntegratedServer.Server.GetNode("World").PauseMode = pauseMode;
+
+        // TODO: Allow starting up the integrated server again when disconnected.
+    }
 
 
     #pragma warning disable IDE0051
@@ -95,32 +100,62 @@ public class EscapeMenuMultiplayer : Container
         }
     }
 
+    private void _on_HideAddress_toggled(bool pressed)
+        => ClientAddress.Secret = pressed;
+
 
     private void _on_ServerOpenClose_pressed()
     {
-        // if (GetTree().NetworkPeer == null) {
-        //     var port = Network.DEFAULT_PORT;
-        //     if (ServerPort.Text.Length > 0)
-        //         port = ushort.Parse(ServerPort.Text);
-        //     Network.Instance.StartServer(port);
-        // } else Network.Instance.StopServer();
+        var server = IntegratedServer?.Server;
+        var client = this.GetClient();
+        if (server?.IsRunning != true) throw new InvalidOperationException();
+
+        if (server.IsSingleplayer) {
+            var port = (ServerPort.Text.Length > 0) ? ushort.Parse(ServerPort.Text) : DEFAULT_PORT;
+            client.Disconnect();
+            server.Stop();
+            server.Start(port);
+            client.Connect("127.0.0.1", port);
+            // TODO: Pause server processing (including packets, RPC, Sync) until client reconnects?
+            //       If we're doing that, also make sure to re-map packet and RPC targets to point to new NetworkID.
+        } else {
+            client.Disconnect();
+            server.Stop();
+            var port = server.StartSingleplayer();
+            client.Connect("127.0.0.1", port);
+        }
+
+        ServerOpenClose.Text = server.IsSingleplayer ? "Open Server" : "Close Server";
+
     }
 
     private void _on_ClientDisConnect_pressed()
     {
-        // if (GetTree().NetworkPeer == null) {
-        //     var address = "localhost";
-        //     var port    = DEFAULT_PORT;
-        //     if (ClientAddress.Text.Length > 0) {
-        //         // TODO: Verify input some more, support IPv6?
-        //         var split = ClientAddress.Text.Split(':');
-        //         address = (split.Length > 1) ? split[0] : ClientAddress.Text;
-        //         port    = (split.Length > 1) ? ushort.Parse(split[1]) : port;
-        //     }
-        //     Network.Instance.ConnectToServer(address, port);
-        // } else Network.Instance.DisconnectFromServer();
-    }
+        var client = this.GetClient();
 
-    private void _on_HideAddress_toggled(bool pressed)
-        => ClientAddress.Secret = pressed;
+        if (IntegratedServer != null) {
+            IntegratedServer.Server.Stop();
+            IntegratedServer.GetParent().RemoveChild(IntegratedServer);
+            IntegratedServer.QueueFree();
+            IntegratedServer = null;
+
+            client.Disconnect();
+            NetworkSync.ClearAllObjects();
+        }
+
+        if (client.Status == ConnectionStatus.Disconnected) {
+            var address = "localhost";
+            var port    = DEFAULT_PORT;
+            if (ClientAddress.Text.Length > 0) {
+                // TODO: Verify input some more, support IPv6?
+                var split = ClientAddress.Text.Split(':');
+                address = (split.Length > 1) ? split[0] : ClientAddress.Text;
+                port    = (split.Length > 1) ? ushort.Parse(split[1]) : port;
+            }
+            client.Connect(address, port);
+        } else {
+            client.Disconnect();
+            NetworkSync.ClearAllObjects();
+        }
+    }
 }
