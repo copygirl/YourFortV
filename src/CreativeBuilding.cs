@@ -11,32 +11,27 @@ public class CreativeBuilding : Node2D
         Breaking,
     }
 
-    private static readonly Vector2[] _neighborPositions = new Vector2[]{
-        Vector2.Left*16, Vector2.Right*16, Vector2.Up*16, Vector2.Down*16 };
-
     [Export] public int MaxLength { get; set; } = 6;
 
     private Texture _blockTex;
-    private Vector2 _startPos;
-    private Vector2 _direction;
+    private BlockPos _startPos;
+    private Facing _direction;
     private int _length;
     private bool _canBuild;
 
     private BuildMode? _currentMode = null;
-
-    private IEnumerable<Vector2> BlockPositions =>
-        Enumerable.Range(0, _length + 1).Select(i => _startPos + _direction * (i * 16));
 
     public override void _Ready()
     {
         _blockTex = GD.Load<Texture>("res://gfx/block.png");
     }
 
-    public override void _Process(float delta)
+    public override void _PhysicsProcess(float delta)
     {
+        if (!(this.GetGame() is Client client)) return;
         Update();
 
-        if (EscapeMenu.Instance.Visible || !Game.Cursor.Visible)
+        if (EscapeMenu.Instance.Visible || !client.Cursor.Visible)
             { _currentMode = null; return; }
 
         switch (_currentMode) {
@@ -49,127 +44,79 @@ public class CreativeBuilding : Node2D
             case BuildMode.Placing:
                 if (Input.IsActionJustPressed("interact_break")) _currentMode = null;
                 else if (!Input.IsActionPressed("interact_place")) {
-                    if (_canBuild)
-                        foreach (var pos in BlockPositions)
-                            PlaceBlock(pos);
+                    if (_canBuild) this.GetClient()?.RPC(PlaceLine, _startPos, _direction, _length);
                     _currentMode = null;
                 }
                 break;
             case BuildMode.Breaking:
                 if (Input.IsActionJustPressed("interact_place")) _currentMode = null;
                 else if (!Input.IsActionPressed("interact_break")) {
-                    foreach (var pos in BlockPositions) {
-                        var block = Game.Instance.GetBlockAt(pos);
-                        if (block != null) BreakBlock(block);
-                    }
+                    this.GetClient()?.RPC(BreakLine, _startPos, _direction, _length);
                     _currentMode = null;
                 }
                 break;
         }
 
         if (_currentMode != null) {
-            var rad90  = Mathf.Deg2Rad(90.0F);
-            var angle  = Mathf.Round(_startPos.AngleToPoint(Game.Cursor.Position) / rad90) * rad90;
-            _direction = new Vector2(-Mathf.Cos(angle), -Mathf.Sin(angle));
-            _length    = Math.Min(MaxLength, Mathf.RoundToInt(_startPos.DistanceTo(Game.Cursor.Position) / 16));
+            var start  = _startPos.ToVector();
+            var angle  = client.Cursor.Position.AngleToPoint(start); // angle_to_point appears reversed.
+            _direction = Facings.FromAngle(angle);
+            _length    = Math.Min(MaxLength, Mathf.RoundToInt(start.DistanceTo(client.Cursor.Position) / 16));
         } else {
-            _startPos = (Game.Cursor.Position / 16).Round() * 16;
+            _startPos = BlockPos.FromVector(client.Cursor.Position);
             _length   = 0;
         }
 
-        bool IsBlockAt(Vector2 pos) => Game.Instance.GetBlockAt(pos) != null;
-        _canBuild = !IsBlockAt(_startPos) && _neighborPositions.Any(pos => IsBlockAt(_startPos + pos));
-    }
-
-    private Block PlaceBlock(Vector2 position)
-    {
-        if (Game.Instance.GetBlockAt(position) != null) return null;
-        // FIXME: Test if there is a player in the way.
-
-        var block = Game.Instance.BlockScene.Init<Block>();
-        block.Position = position;
-        block.Modulate = Game.LocalPlayer.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
-        Game.Instance.BlockContainer.AddChild(block);
-
-        if (Network.IsMultiplayerReady) {
-            if (Network.IsServer) Network.API.SendToEveryone(new SpawnBlockPacket(block));
-            else Network.API.SendToServer(new PlaceBlockPacket(position));
-        }
-
-        return block;
-    }
-
-    private void BreakBlock(Block block)
-    {
-        // FIXME: Use a different (safer) way to check if a block is one of the default ones.
-        if (block.Modulate.s < 0.5F) return;
-
-        if (Network.IsMultiplayerReady) {
-            if (Network.IsServer) Network.API.SendToEveryone(new DestroyBlockPacket(block));
-            else Network.API.SendToServer(new BreakBlockPacket(block));
-        }
-
-        block.QueueFree();
+        bool IsBlockAt(BlockPos pos) => client.GetBlockAt(pos) != null;
+        _canBuild = !IsBlockAt(_startPos) && Facings.All.Any(pos => IsBlockAt(_startPos + pos.ToBlockPos()));
     }
 
     public override void _Draw()
     {
-        if (!Game.Cursor.Visible) return;
+        if (!(this.GetGame() is Client client) || !client.Cursor.Visible || EscapeMenu.Instance.Visible) return;
 
         var green = Color.FromHsv(1.0F / 3, 1.0F, 1.0F, 0.4F);
         var red   = Color.FromHsv(0.0F, 1.0F, 1.0F, 0.4F);
         var black = new Color(0.0F, 0.0F, 0.0F, 0.65F);
 
-        foreach (var pos in BlockPositions) {
-            var hasBlock = Game.Instance.GetBlockAt(pos) != null;
-            var color = (_currentMode != BuildMode.Breaking)
+        foreach (var pos in GetBlockPositions(_startPos, _direction, _length)) {
+            var hasBlock = client.GetBlockAt(pos) != null;
+            var color    = (_currentMode != BuildMode.Breaking)
                 ? ((_canBuild && !hasBlock) ? green : red)
                 : (hasBlock ? black : red);
-            DrawTexture(_blockTex, ToLocal(pos - _blockTex.GetSize() / 2), color);
+            DrawTexture(_blockTex, ToLocal(pos.ToVector() - _blockTex.GetSize() / 2), color);
         }
     }
 
+    private static IEnumerable<BlockPos> GetBlockPositions(BlockPos start, Facing direction, int length)
+        => Enumerable.Range(0, length + 1).Select(i => start + direction.ToBlockPos() * i);
 
 
-    public static void RegisterPackets()
+    [RPC(PacketDirection.ClientToServer)]
+    private static void PlaceLine(Server server, NetworkID networkID, BlockPos start, Facing direction, int length)
     {
-        Network.API.RegisterC2SPacket<PlaceBlockPacket>(OnPlaceBlockPacket);
-        Network.API.RegisterC2SPacket<BreakBlockPacket>(OnBreakBlockPacket);
-    }
+        var player = server.GetPlayer(networkID);
+        // TODO: Test if starting block is valid.
+        foreach (var pos in GetBlockPositions(start, direction, length)) {
+            if (server.GetBlockAt(pos) != null) continue;
+            // FIXME: Test if there is a player in the way.
 
-    private class PlaceBlockPacket
-    {
-        public Vector2 Position { get; }
-        public PlaceBlockPacket(Vector2 position) => Position = position;
-    }
-    private static void OnPlaceBlockPacket(Player player, PlaceBlockPacket packet)
-    {
-        if (Game.Instance.GetBlockAt(packet.Position) != null) return;
-        var block = Game.Instance.BlockScene.Init<Block>();
-        block.Position = packet.Position;
-        block.Modulate = player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
-        Game.Instance.BlockContainer.AddChild(block);
-
-        Network.API.SendToEveryone(new SpawnBlockPacket(block));
-    }
-
-    private class BreakBlockPacket
-    {
-        public Vector2 Position { get; }
-        public BreakBlockPacket(Block block) => Position = block.Position;
-    }
-    private static void OnBreakBlockPacket(Player player, BreakBlockPacket packet)
-    {
-        var block = Game.Instance.GetBlockAt(packet.Position);
-        if (block == null) return;
-
-        if (block.Modulate.s < 0.5F) {
-            // TODO: Respawn the block the client thought it destroyed?
-            return;
+            server.Spawn<Block>(block => {
+                block.Position = pos;
+                block.Color    = player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
+            });
         }
-        // TODO: Further verify whether player can break a block at this position.
+    }
 
-        Network.API.SendToEveryoneExcept(player, new DestroyBlockPacket(block));
-        block.QueueFree();
+    [RPC(PacketDirection.ClientToServer)]
+    private static void BreakLine(Server server, NetworkID networkID, BlockPos start, Facing direction, int length)
+    {
+        // var player = server.GetPlayer(networkID);
+        // TODO: Do additional verification on the packet.
+        foreach (var pos in GetBlockPositions(start, direction, length)) {
+            var block = server.GetBlockAt(pos);
+            if (block?.Unbreakable != false) continue;
+            block.Destroy();
+        }
     }
 }

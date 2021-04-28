@@ -18,8 +18,7 @@ public class EscapeMenuAppearance : CenterContainer
         ColorSlider  = GetNode<Slider>(ColorSliderPath);
 
         ColorSlider.Value = GD.Randf();
-        var color = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
-        Game.LocalPlayer.Color = ColorPreview.Modulate = color;
+        ColorPreview.Modulate = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
     }
 
 
@@ -45,9 +44,10 @@ public class EscapeMenuAppearance : CenterContainer
 
     private void _on_Appearance_visibility_changed()
     {
-        if (!IsVisibleInTree())
-            Player.ChangeAppearance(Game.LocalPlayer,
-                DisplayName.Text, ColorPreview.Modulate,
-                Network.IsClient);
+        if (IsVisibleInTree()) return;
+        var client = this.GetClient();
+        // TODO: Find a better way to know if we're connected?
+        if (client.CustomMultiplayer.NetworkPeer?.GetConnectionStatus() == NetworkedMultiplayerPeer.ConnectionStatus.Connected)
+            client.RPC(Player.ChangeAppearance, DisplayName.Text, ColorPreview.Modulate);
     }
 }

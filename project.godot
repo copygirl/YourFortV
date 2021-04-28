@@ -10,13 +10,12 @@ config_version=4
 
 _global_script_classes=[  ]
 _global_script_class_icons={
-
 }
 
 [application]
 
 config/name="YourFortV"
-run/main_scene="res://scene/GameScene.tscn"
+run/main_scene="res://scene/ClientScene.tscn"
 boot_splash/image="res://gfx/icon.png"
 boot_splash/use_filter=false
 config/icon="res://gfx/icon.png"
@@ -90,6 +89,7 @@ interact_break={
 
 [rendering]
 
-quality/2d/use_pixel_snap=true
+2d/snapping/use_gpu_pixel_snap=true
 quality/filters/use_nearest_mipmap_filter=true
 quality/dynamic_fonts/use_oversampling=false
+quality/2d/use_pixel_snap=true

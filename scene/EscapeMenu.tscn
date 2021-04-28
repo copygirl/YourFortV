@@ -12,6 +12,7 @@ anchor_bottom = 1.0
 theme = ExtResource( 1 )
 script = ExtResource( 2 )
 __meta__ = {
+"_edit_lock_": true,
 "_edit_use_anchors_": false
 }
 ReturnPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/Return")
@@ -20,11 +21,15 @@ ReturnPath = NodePath("CenterContainer/PanelContainer/VBoxContainer/Return")
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color( 0, 0, 0, 0.501961 )
+__meta__ = {
+"_edit_lock_": true
+}
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
 __meta__ = {
+"_edit_lock_": true,
 "_edit_use_anchors_": false
 }
 
@@ -134,9 +139,9 @@ step = 0.0
 scrollable = false
 
 [node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer"]
-margin_top = 42.0
+margin_top = 43.0
 margin_right = 182.0
-margin_bottom = 54.0
+margin_bottom = 55.0
 rect_min_size = Vector2( 0, 12 )
 custom_colors/font_color = Color( 0.6, 0.6, 0.6, 1 )
 text = "(Close Menu to apply changes.)"
@@ -153,7 +158,7 @@ margin_right = -4.0
 margin_bottom = -4.0
 script = ExtResource( 4 )
 StatusPath = NodePath("ContainerStatus/Status")
-ServerStartStopPath = NodePath("ContainerServer/ServerStartStop")
+ServerOpenClosePath = NodePath("ContainerServer/ServerOpenClose")
 ServerPortPath = NodePath("ContainerServer/ServerPort")
 ClientDisConnectPath = NodePath("ContainerClient/ClientDisConnect")
 ClientAddressPath = NodePath("ContainerClient/ClientAddress")
@@ -213,12 +218,12 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ServerStartStop" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer"]
+[node name="ServerOpenClose" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer"]
 margin_left = 94.0
 margin_right = 221.0
 margin_bottom = 19.0
 size_flags_horizontal = 3
-text = "Start Server"
+text = "Open Server"
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -327,11 +332,12 @@ scroll_active = false
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
 [connection signal="visibility_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Appearance_visibility_changed"]
 [connection signal="text_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName/DisplayName" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_DisplayName_text_changed"]
 [connection signal="value_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor/Hue" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Hue_value_changed"]
 [connection signal="text_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer/ServerPort" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerPort_text_changed"]
-[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer/ServerStartStop" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerStartStop_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer/ServerOpenClose" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerOpenClose_pressed"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient/ClientDisConnect" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ClientDisConnect_pressed"]
 [connection signal="toggled" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerHideAddress/HideAddress" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_HideAddress_toggled"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/Quit" to="." method="_on_Quit_pressed"]

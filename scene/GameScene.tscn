@@ -1,64 +1,16 @@
-[gd_scene load_steps=12 format=2]
+[gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://scene/EscapeMenu.tscn" type="PackedScene" id=1]
-[ext_resource path="res://src/Cursor.cs" type="Script" id=2]
-[ext_resource path="res://src/Game.cs" type="Script" id=3]
-[ext_resource path="res://gfx/cursor.png" type="Texture" id=4]
-[ext_resource path="res://scene/LocalPlayer.tscn" type="PackedScene" id=5]
-[ext_resource path="res://scene/Block.tscn" type="PackedScene" id=6]
-[ext_resource path="res://src/Viewport.cs" type="Script" id=7]
-[ext_resource path="res://src/Network.cs" type="Script" id=8]
-[ext_resource path="res://scene/Player.tscn" type="PackedScene" id=9]
-[ext_resource path="res://gfx/background.png" type="Texture" id=10]
-[ext_resource path="res://src/Background.cs" type="Script" id=11]
+[ext_resource path="res://src/Scenes/Game.cs" type="Script" id=3]
 
 [node name="Game" type="Node2D"]
 pause_mode = 2
 script = ExtResource( 3 )
-CursorPath = NodePath("CursorLayer/Cursor")
+PlayerContainerPath = NodePath("World/Players")
 BlockContainerPath = NodePath("World/Blocks")
-BlockScene = ExtResource( 6 )
-
-[node name="Viewport" type="Node" parent="."]
-script = ExtResource( 7 )
-
-[node name="Network" type="Node" parent="."]
-script = ExtResource( 8 )
-PlayerContainerPath = NodePath("../World/Players")
-OtherPlayerScene = ExtResource( 9 )
-
-[node name="Background" type="TextureRect" parent="."]
-modulate = Color( 0.278431, 0.286275, 0.301961, 1 )
-margin_left = 1.0
-margin_top = -1.0
-margin_right = 1281.0
-margin_bottom = 719.0
-texture = ExtResource( 10 )
-stretch_mode = 2
-script = ExtResource( 11 )
-__meta__ = {
-"_edit_use_anchors_": false
-}
 
 [node name="World" type="Node" parent="."]
 
 [node name="Players" type="Node" parent="World"]
 pause_mode = 1
 
-[node name="LocalPlayer" parent="World/Players" instance=ExtResource( 5 )]
-
 [node name="Blocks" type="Node" parent="World"]
-
-[node name="HUD" type="CanvasLayer" parent="."]
-
-[node name="EscapeMenu" parent="HUD" instance=ExtResource( 1 )]
-visible = false
-
-[node name="CursorLayer" type="CanvasLayer" parent="."]
-layer = 2
-follow_viewport_enable = true
-
-[node name="Cursor" type="Sprite" parent="CursorLayer"]
-z_index = 1000
-texture = ExtResource( 4 )
-script = ExtResource( 2 )
