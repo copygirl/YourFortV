@@ -4,7 +4,8 @@
     "name": "Play in Editor",
     "type": "godot-mono",
     "mode": "playInEditor",
-    "request": "launch"
+    "request": "launch",
+    "preLaunchTask": "build"
   },{
     "name": "Launch (Linux)",
     "type": "godot-mono",
