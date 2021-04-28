@@ -97,14 +97,16 @@ public class CreativeBuilding : Node2D
     {
         var player = server.GetPlayer(networkID);
         // TODO: Test if starting block is valid.
-        foreach (var pos in GetBlockPositions(start, direction, length)) {
-            if (server.GetBlockAt(pos) != null) continue;
-            // FIXME: Test if there is a player in the way.
 
-            server.Spawn<Block>(block => {
-                block.Position = pos;
-                block.Color    = player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
-            });
+        // FIXME: Test if there is a player in the way.
+        var validLocations = GetBlockPositions(start, direction, length)
+            .Where(pos => server.GetBlockAt(pos) == null)
+            .ToArray();
+
+        foreach (var pos in validLocations) {
+            var block = server.Spawn<Block>();
+            block.Position = pos;
+            block.Color    = player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
         }
     }
 

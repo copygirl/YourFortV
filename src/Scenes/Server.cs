@@ -34,12 +34,12 @@ public class Server : Game
         CustomMultiplayer.NetworkPeer = peer;
 
         // Spawn default blocks.
-        for (var x = -6; x <= 6; x++)
-            this.Spawn<Block>(block => {
-                block.Position    = new BlockPos(x, 3);
-                block.Color       = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
-                block.Unbreakable = true;
-            });
+        for (var x = -6; x <= 6; x++) {
+            var block = this.Spawn<Block>();
+            block.Position    = new BlockPos(x, 3);
+            block.Color       = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
+            block.Unbreakable = true;
+        }
     }
 
     public void Stop()
@@ -62,10 +62,10 @@ public class Server : Game
         var networkID = new NetworkID(id);
         NetworkSync.SendAllObjects(this, networkID);
 
-        var player = this.Spawn<Player>(p => {
-           p.Position = Vector2.Zero;
-           p.Color    = Colors.Red;
-        });
+        var player = this.Spawn<Player>();
+        player.Position = Vector2.Zero;
+        player.Color    = Colors.Red;
+
         _playersByNetworkID.Add(networkID, player);
         _networkIDByPlayer.Add(player, networkID);
 

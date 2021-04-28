@@ -25,7 +25,7 @@ public static class NetworkSync
     }
 
 
-    public static T Spawn<T>(this Server server, Action<T> init = null)
+    public static T Spawn<T>(this Server server)
         where T : Node
     {
         if (!_infoByType.TryGetValue(typeof(T), out var info)) throw new ArgumentException(
@@ -37,7 +37,6 @@ public static class NetworkSync
         _statusByObject.Add(status.Object, status);
         _dirtyObjects.Add(status);
         server.GetNode(info.ContainerNodePath).AddChild(obj);
-        init?.Invoke(obj);
 
         return obj;
     }
