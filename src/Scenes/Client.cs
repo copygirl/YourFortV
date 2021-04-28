@@ -7,6 +7,9 @@ public class Client : Game
     [Export] public NodePath CursorPath { get; set; }
     public Cursor Cursor { get; private set; }
 
+    public event Action OnConnected;
+    public event Action OnDisconnected;
+
     public Client()
     {
         CustomMultiplayer = new MultiplayerAPI { RootNode = this };
@@ -44,13 +47,12 @@ public class Client : Game
         if (CustomMultiplayer.NetworkPeer == null) return;
         ((NetworkedMultiplayerENet)CustomMultiplayer.NetworkPeer).CloseConnection();
         CustomMultiplayer.NetworkPeer = null;
+        OnDisconnected?.Invoke();
     }
 
 
     private void OnConnectedToServer()
-    {
-        // TODO: Send initial appearance.
-    }
+        => OnConnected?.Invoke();
 
     private void OnPacketReceived(int id, byte[] bytes)
     {

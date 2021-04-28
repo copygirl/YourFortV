@@ -19,6 +19,9 @@ public class EscapeMenuAppearance : CenterContainer
 
         ColorSlider.Value = GD.Randf();
         ColorPreview.Modulate = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
+
+        this.GetClient().OnConnected += () =>
+            this.GetClient().RPC(Player.ChangeAppearance, DisplayName.Text, ColorPreview.Modulate);
     }
 
 
