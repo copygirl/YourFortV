@@ -14,25 +14,28 @@ public class SyncClient : Sync
     {
         foreach (var packetObj in packet.Changes) {
             var info   = SyncRegistry.Get(packetObj.InfoID);
-            var status = GetStatusOrNull(packetObj.SyncID);
+            var status = GetStatusOrNull(packetObj.ID);
 
             if (status == null) {
                 if (packetObj.Mode != SyncMode.Spawn) throw new Exception(
-                    $"Unknown synced object {info.Name} (ID {packetObj.SyncID})");
+                    $"Unknown synced object {info.Name} (ID {packetObj.ID})");
 
                 var obj = info.Scene.Init<Node>();
-                status  = new SyncStatus(packetObj.SyncID, obj, info);
-                StatusBySyncID.Add(status.SyncID, status);
+                Client.Objects.Add(packetObj.ID, obj);
+
+                status = new SyncStatus(packetObj.ID, obj, info);
+                StatusByID.Add(status.ID, status);
                 StatusByObject.Add(status.Object, status);
+
                 Client.GetNode("World").AddChild(obj);
             } else {
                 if (packetObj.Mode == SyncMode.Spawn) throw new Exception(
-                    $"Spawning object {info.Name} with ID {packetObj.SyncID}, but it already exists");
+                    $"Spawning object {info.Name} with ID {packetObj.ID}, but it already exists");
                 if (info != status.Info) throw new Exception(
                     $"Info of synced object being modified doesn't match ({info.Name} != {status.Info.Name})");
 
                 if (packetObj.Mode == SyncMode.Destroy) {
-                    StatusBySyncID.Remove(status.SyncID);
+                    StatusByID.Remove(status.ID);
                     StatusByObject.Remove(status.Object);
 
                     status.Object.GetParent().RemoveChild(status.Object);

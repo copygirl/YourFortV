@@ -155,7 +155,7 @@ public readonly struct NetworkID : IEquatable<NetworkID>
     public override bool Equals(object obj) => (obj is NetworkID other) && Equals(other);
     public bool Equals(NetworkID other) => Value == other.Value;
     public override int GetHashCode() => Value.GetHashCode();
-    public override string ToString() => $"NetworkID({Value})";
+    public override string ToString() => $"{nameof(NetworkID)}({Value})";
     public static bool operator ==(NetworkID left, NetworkID right) => left.Equals(right);
     public static bool operator !=(NetworkID left, NetworkID right) => !left.Equals(right);
 }

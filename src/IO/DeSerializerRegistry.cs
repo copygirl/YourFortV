@@ -38,7 +38,7 @@ public static class DeSerializerRegistry
         RegisterGenerator(new ArrayDeSerializerGenerator());
         RegisterGenerator(new CollectionDeSerializerGenerator());
         RegisterGenerator(new DictionaryDeSerializerGenerator());
-        RegisterGenerator(new SyncedObjectDeSerializerGenerator());
+        RegisterGenerator(new NodeDeSerializerGenerator());
     }
 
     public static void Register<T>(Action<BinaryWriter, T> serialize, Func<BinaryReader, T> deserialize)

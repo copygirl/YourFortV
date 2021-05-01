@@ -4,6 +4,7 @@ using Godot.Collections;
 
 public abstract class Game : Node2D
 {
+    public ObjectHolder Objects { get; } = new ObjectHolder();
     public Sync Sync { get; protected set; }
 
 	// Using _EnterTree to make sure this code runs before any other.

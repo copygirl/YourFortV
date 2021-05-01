@@ -9,17 +9,17 @@ using Godot;
 public class Sync
 {
     protected Game Game { get; }
-    protected Dictionary<uint, SyncStatus> StatusBySyncID { get; } = new Dictionary<uint, SyncStatus>();
+    protected Dictionary<UniqueID, SyncStatus> StatusByID { get; } = new Dictionary<UniqueID, SyncStatus>();
     protected Dictionary<Node, SyncStatus> StatusByObject { get; } = new Dictionary<Node, SyncStatus>();
 
     static Sync() => DeSerializerRegistry.Register(new SyncPacketObjectDeSerializer());
     public Sync(Game game) => Game = game;
 
-    public SyncStatus GetStatusOrNull(uint syncID)
-        => StatusBySyncID.TryGetValue(syncID, out var value) ? value : null;
-    public SyncStatus GetStatusOrThrow(uint syncID)
-        => GetStatusOrNull(syncID) ?? throw new Exception(
-            $"No {nameof(SyncStatus)} found for ID {syncID}");
+    public SyncStatus GetStatusOrNull(UniqueID id)
+        => StatusByID.TryGetValue(id, out var value) ? value : null;
+    public SyncStatus GetStatusOrThrow(UniqueID id)
+        => GetStatusOrNull(id) ?? throw new Exception(
+            $"No {nameof(SyncStatus)} found for ID {id}");
 
     public SyncStatus GetStatusOrNull(Node obj)
     {
@@ -39,23 +39,23 @@ public class Sync
             node.QueueFree();
         }
 
+        StatusByID.Clear();
         StatusByObject.Clear();
-        StatusBySyncID.Clear();
     }
 }
 
 
 public class SyncStatus
 {
-    public uint SyncID { get; }
+    public UniqueID ID { get; }
     public Node Object { get; }
     public SyncObjectInfo Info { get; }
 
     public int DirtyProperties { get; set; }
     public SyncMode Mode { get; set; }
 
-    public SyncStatus(uint syncID, Node obj, SyncObjectInfo info)
-        { SyncID = syncID; Object = obj; Info = info; }
+    public SyncStatus(UniqueID id, Node obj, SyncObjectInfo info)
+        { ID = id; Object = obj; Info = info; }
 }
 
 public enum SyncMode
@@ -73,11 +73,11 @@ public class SyncPacket
     public class Object
     {
         public ushort InfoID { get; }
-        public uint SyncID { get; }
+        public UniqueID ID { get; }
         public SyncMode Mode { get; }
         public List<(byte, object)> Values { get; }
-        public Object(ushort infoID, uint syncID, SyncMode mode, List<(byte, object)> values)
-            { InfoID = infoID; SyncID = syncID; Mode = mode; Values = values; }
+        public Object(ushort infoID, UniqueID id, SyncMode mode, List<(byte, object)> values)
+            { InfoID = infoID; ID = id; Mode = mode; Values = values; }
     }
 }
 
@@ -87,7 +87,7 @@ internal class SyncPacketObjectDeSerializer
     public override void Serialize(Game game, BinaryWriter writer, SyncPacket.Object value)
     {
         writer.Write(value.InfoID);
-        writer.Write(value.SyncID);
+        writer.Write(value.ID.Value);
         writer.Write((byte)value.Mode);
         writer.Write((byte)value.Values.Count);
 
@@ -103,7 +103,7 @@ internal class SyncPacketObjectDeSerializer
     public override SyncPacket.Object Deserialize(Game game, BinaryReader reader)
     {
         var infoID = reader.ReadUInt16();
-        var syncID = reader.ReadUInt32();
+        var id     = new UniqueID(reader.ReadUInt32());
         var mode   = (SyncMode)reader.ReadByte();
         var count  = reader.ReadByte();
 
@@ -124,6 +124,6 @@ internal class SyncPacketObjectDeSerializer
             values.Add((propID, deSerializer.Deserialize(game, reader)));
         }
 
-        return new SyncPacket.Object(infoID, syncID, mode, values);
+        return new SyncPacket.Object(infoID, id, mode, values);
     }
 }

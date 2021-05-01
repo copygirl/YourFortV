@@ -205,26 +205,26 @@ public class DictionaryDeSerializerGenerator
     }
 }
 
-public class SyncedObjectDeSerializerGenerator
+public class NodeDeSerializerGenerator
     : IDeSerializerGenerator
 {
     public IDeSerializer GenerateFor(Type type)
     {
-        if (!typeof(Node).IsAssignableFrom(type) || (type.GetCustomAttribute<SyncObjectAttribute>() == null)) return null;
-        var deSerializerType = typeof(SyncedObjectDeSerializer<>).MakeGenericType(type);
+        if (!typeof(Node).IsAssignableFrom(type)) return null;
+        var deSerializerType = typeof(NodeDeSerializer<>).MakeGenericType(type);
         return (IDeSerializer)Activator.CreateInstance(deSerializerType);
     }
 
-    private class SyncedObjectDeSerializer<TObj>
+    private class NodeDeSerializer<TObj>
             : DeSerializer<TObj>
         where TObj : Node
     {
         public override void Serialize(Game game, BinaryWriter writer, TObj value)
-            => writer.Write(game.Sync.GetStatusOrThrow(value).SyncID);
+            => writer.Write(game.Objects.GetSyncID(value).Value);
         public override TObj Deserialize(Game game, BinaryReader reader)
         {
-            var id    = reader.ReadUInt32();
-            var value = (TObj)game.Sync.GetStatusOrThrow(id).Object;
+            var id    = new UniqueID(reader.ReadUInt32());
+            var value = (TObj)game.Objects.GetNodeByID(id);
             if (value == null) throw new Exception($"Could not find synced object of type {typeof(TObj)} with ID {id}");
             return value;
         }

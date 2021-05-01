@@ -6,7 +6,6 @@ using Godot;
 public class SyncServer : Sync
 {
     private static readonly HashSet<SyncStatus> _dirtyObjects = new HashSet<SyncStatus>();
-    private static uint _syncIDCounter = 1;
 
     protected Server Server => (Server)Game;
 
@@ -16,12 +15,15 @@ public class SyncServer : Sync
     public T Spawn<T>()
         where T : Node
     {
-        var info   = SyncRegistry.Get<T>();
-        var obj    = info.Scene.Init<T>();
-        var status = new SyncStatus(_syncIDCounter++, obj, info){ Mode = SyncMode.Spawn };
-        StatusBySyncID.Add(status.SyncID, status);
+        var info = SyncRegistry.Get<T>();
+        var obj  = info.Scene.Init<T>();
+        var id   = Server.Objects.Add(obj);
+
+        var status = new SyncStatus(id, obj, info){ Mode = SyncMode.Spawn };
+        StatusByID.Add(status.ID, status);
         StatusByObject.Add(status.Object, status);
         _dirtyObjects.Add(status);
+
         Server.GetNode("World").AddChild(obj);
 
         return obj;
@@ -33,7 +35,7 @@ public class SyncServer : Sync
         var status = GetStatusOrThrow(obj);
 
         status.Mode = SyncMode.Destroy;
-        StatusBySyncID.Remove(status.SyncID);
+        StatusByID.Remove(status.ID);
         StatusByObject.Remove(status.Object);
         _dirtyObjects.Add(status);
 
@@ -63,7 +65,7 @@ public class SyncServer : Sync
             foreach (var prop in status.Info.PropertiesByID)
                 if ((status.DirtyProperties & (1 << prop.ID)) != 0)
                     values.Add((prop.ID, prop.Getter(status.Object)));
-            packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.SyncID, status.Mode, values));
+            packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.ID, status.Mode, values));
             // If the object has been newly spawned, now is the time to remove the "Spawn" flag.
             if (status.Mode == SyncMode.Spawn) status.Mode = SyncMode.Default;
         }
@@ -80,7 +82,7 @@ public class SyncServer : Sync
             var values = new List<(byte, object)>();
             foreach (var prop in status.Info.PropertiesByID)
                 values.Add((prop.ID, prop.Getter(status.Object)));
-            packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.SyncID, SyncMode.Spawn, values));
+            packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.ID, SyncMode.Spawn, values));
         }
         NetworkPackets.Send(server, new []{ networkID }, packet);
     }
@@ -89,6 +91,5 @@ public class SyncServer : Sync
     {
         base.Clear();
         _dirtyObjects.Clear();
-        _syncIDCounter = 1;
     }
 }

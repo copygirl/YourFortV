@@ -135,12 +135,15 @@ public class EscapeMenuMultiplayer : Container
 
         if (IntegratedServer != null) {
             IntegratedServer.Server.Stop();
+            // TODO: Have a single method to "reset" the state?
+            IntegratedServer.Server.Objects.Clear();
             IntegratedServer.Server.Sync.Clear();
             IntegratedServer.GetParent().RemoveChild(IntegratedServer);
             IntegratedServer.QueueFree();
             IntegratedServer = null;
 
             client.Disconnect();
+            client.Objects.Clear();
             client.Sync.Clear();
         }
 
@@ -156,6 +159,7 @@ public class EscapeMenuMultiplayer : Container
             client.Connect(address, port);
         } else {
             client.Disconnect();
+            client.Objects.Clear();
             client.Sync.Clear();
         }
     }
