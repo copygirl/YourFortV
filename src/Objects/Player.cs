@@ -2,7 +2,7 @@ using System;
 using Godot;
 
 // TODO: Maybe figure out how we can make different classes (LocalPlayer, NPCPlayer) synchronizable.
-[SyncObject("Player", "World/Players")]
+[Sync]
 public class Player : KinematicBody2D, IInitializer
 {
     [Export] public NodePath DisplayNamePath { get; set; }
@@ -14,19 +14,19 @@ public class Player : KinematicBody2D, IInitializer
 
     public bool IsLocal { get; private set; } = false;
 
-    [SyncProperty]
+    [Sync]
     public new Vector2 Position {
         get => base.Position;
         set { if (!IsLocal) base.Position = this.SetSync(value); }
     }
 
-    [SyncProperty]
+    [Sync]
     public Color Color {
         get => Sprite.Modulate;
         set => Sprite.Modulate = this.SetSync(value);
     }
 
-    [SyncProperty]
+    [Sync]
     public string DisplayName {
         get => DisplayNameLabel.Text;
         set => DisplayNameLabel.Text = this.SetSync(value);

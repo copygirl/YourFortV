@@ -89,8 +89,8 @@ public static class NetworkRPC
                 var rpc = method.GetCustomAttribute<RPCAttribute>();
                 if (rpc == null) continue;
 
-                if (!method.IsStatic && (type.GetCustomAttribute<SyncObjectAttribute>() == null)) throw new Exception(
-                    $"Type of non-static RPC method '{method.DeclaringType}.{method.Name}' must have {nameof(SyncObjectAttribute)}");
+                if (!method.IsStatic && (type.GetCustomAttribute<SyncAttribute>() == null)) throw new Exception(
+                    $"Type of non-static RPC method '{method.DeclaringType}.{method.Name}' must have {nameof(SyncAttribute)}");
 
                 var deSerializers = new List<IDeSerializer>();
                 var paramEnumerable = ((IEnumerable<ParameterInfo>)method.GetParameters()).GetEnumerator();

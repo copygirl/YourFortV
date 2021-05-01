@@ -17,12 +17,12 @@ public class SyncServer : Sync
         where T : Node
     {
         var info   = SyncRegistry.Get<T>();
-        var obj    = info.InstanceScene.Init<T>();
+        var obj    = info.Scene.Init<T>();
         var status = new SyncStatus(_syncIDCounter++, obj, info){ Mode = SyncMode.Spawn };
         StatusBySyncID.Add(status.SyncID, status);
         StatusByObject.Add(status.Object, status);
         _dirtyObjects.Add(status);
-        Server.GetNode(info.ContainerNodePath).AddChild(obj);
+        Server.GetNode("World").AddChild(obj);
 
         return obj;
     }
@@ -45,7 +45,7 @@ public class SyncServer : Sync
     {
         var status = GetStatusOrThrow(obj);
         if (!status.Info.PropertiesByName.TryGetValue(property, out var propInfo)) throw new ArgumentException(
-            $"No {nameof(SyncPropertyInfo)} found for {obj.GetType()}.{property} (missing {nameof(SyncPropertyAttribute)}?)", nameof(property));
+            $"No {nameof(SyncPropertyInfo)} found for {obj.GetType()}.{property} (missing {nameof(SyncAttribute)}?)", nameof(property));
         if (!(obj.GetGame() is Server)) return;
 
         status.DirtyProperties |= 1 << propInfo.ID;

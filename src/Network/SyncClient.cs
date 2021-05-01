@@ -20,11 +20,11 @@ public class SyncClient : Sync
                 if (packetObj.Mode != SyncMode.Spawn) throw new Exception(
                     $"Unknown synced object {info.Name} (ID {packetObj.SyncID})");
 
-                var obj = info.InstanceScene.Init<Node>();
+                var obj = info.Scene.Init<Node>();
                 status  = new SyncStatus(packetObj.SyncID, obj, info);
                 StatusBySyncID.Add(status.SyncID, status);
                 StatusByObject.Add(status.Object, status);
-                Client.GetNode(info.ContainerNodePath).AddChild(obj);
+                Client.GetNode("World").AddChild(obj);
             } else {
                 if (packetObj.Mode == SyncMode.Spawn) throw new Exception(
                     $"Spawning object {info.Name} with ID {packetObj.SyncID}, but it already exists");

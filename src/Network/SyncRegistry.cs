@@ -11,15 +11,15 @@ public static class SyncRegistry
     static SyncRegistry()
     {
         foreach (var type in typeof(SyncRegistry).Assembly.GetTypes()) {
-            var objAttr = type.GetCustomAttribute<SyncObjectAttribute>();
+            var objAttr = type.GetCustomAttribute<SyncAttribute>();
             if (objAttr == null) continue;
 
             if (!typeof(Node).IsAssignableFrom(type)) throw new Exception(
-                $"Type {type} with {nameof(SyncObjectAttribute)} must be a subclass of {nameof(Node)}");
+                $"Type {type} with {nameof(SyncAttribute)} must be a subclass of {nameof(Node)}");
 
             var objInfo = new SyncObjectInfo((ushort)_byID.Count, type);
             foreach (var property in type.GetProperties()) {
-                if (property.GetCustomAttribute<SyncPropertyAttribute>() == null) continue;
+                if (property.GetCustomAttribute<SyncAttribute>() == null) continue;
                 var propType = typeof(SyncPropertyInfo<,>).MakeGenericType(type, property.PropertyType);
                 var propInfo = (SyncPropertyInfo)Activator.CreateInstance(propType, (byte)objInfo.PropertiesByID.Count, property);
                 objInfo.PropertiesByID.Add(propInfo);
@@ -41,7 +41,7 @@ public static class SyncRegistry
         => Get(typeof(T));
     public static SyncObjectInfo Get(Type type)
         => _byType.TryGetValue(type, out var value) ? value : throw new Exception(
-            $"No {nameof(SyncObjectInfo)} found for type {type} (missing {nameof(SyncObjectAttribute)}?)");
+            $"No {nameof(SyncObjectInfo)} found for type {type} (missing {nameof(SyncAttribute)}?)");
 }
 
 
@@ -49,22 +49,17 @@ public class SyncObjectInfo
 {
     public ushort ID { get; }
     public Type Type { get; }
+    public PackedScene Scene { get; }
     public string Name => Type.Name;
-
-    public PackedScene InstanceScene { get; }
-    public string ContainerNodePath { get; }
 
     public List<SyncPropertyInfo> PropertiesByID { get; } = new List<SyncPropertyInfo>();
     public Dictionary<string, SyncPropertyInfo> PropertiesByName { get; } = new Dictionary<string, SyncPropertyInfo>();
 
     public SyncObjectInfo(ushort id, Type type)
     {
-        ID   = id;
-        Type = type;
-
-        var attr = type.GetCustomAttribute<SyncObjectAttribute>();
-        InstanceScene     = GD.Load<PackedScene>($"res://scene/{attr.Scene}.tscn");
-        ContainerNodePath = attr.Container;
+        ID    = id;
+        Type  = type;
+        Scene = GD.Load<PackedScene>($"res://scene/{type.Name}.tscn");
     }
 }
 
@@ -95,16 +90,7 @@ public class SyncPropertyInfo<TObject, TValue> : SyncPropertyInfo
 }
 
 
-[AttributeUsage(AttributeTargets.Class)]
-public class SyncObjectAttribute : Attribute
-{
-    public string Scene { get; }
-    public string Container { get; }
-    public SyncObjectAttribute(string scene, string container)
-        { Scene = scene; Container = container; }
-}
-
-[AttributeUsage(AttributeTargets.Property)]
-public class SyncPropertyAttribute : Attribute
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property)]
+public class SyncAttribute : Attribute
 {
 }

@@ -23,8 +23,8 @@ public class Sync
 
     public SyncStatus GetStatusOrNull(Node obj)
     {
-        if (obj.GetType().GetCustomAttribute<SyncObjectAttribute>() == null)
-            throw new ArgumentException($"Type {obj.GetType()} is missing {nameof(SyncObjectAttribute)}");
+        if (obj.GetType().GetCustomAttribute<SyncAttribute>() == null)
+            throw new ArgumentException($"Type {obj.GetType()} is missing {nameof(SyncAttribute)}");
         return StatusByObject.TryGetValue(obj, out var value) ? value : null;
     }
     public SyncStatus GetStatusOrThrow(Node obj)

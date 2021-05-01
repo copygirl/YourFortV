@@ -5,11 +5,5 @@
 [node name="Game" type="Node2D"]
 pause_mode = 2
 script = ExtResource( 3 )
-PlayerContainerPath = NodePath("World/Players")
-BlockContainerPath = NodePath("World/Blocks")
 
 [node name="World" type="Node" parent="."]
-
-[node name="Players" type="Node" parent="World"]
-
-[node name="Blocks" type="Node" parent="World"]
