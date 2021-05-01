@@ -9,6 +9,8 @@ public class Cursor : Node2D
 
     public override void _Notification(int what)
     {
+        // TODO: Keep mouse visible when it was pressed down in the game window.
+        //       Meaning the game will continue to receive mouse move updates.
         switch (what) {
             case MainLoop.NotificationWmMouseEnter: Visible = true; break;
             case MainLoop.NotificationWmMouseExit: Visible = false; break;

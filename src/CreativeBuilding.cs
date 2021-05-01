@@ -13,7 +13,9 @@ public class CreativeBuilding : Node2D
 
     [Export] public int MaxLength { get; set; } = 6;
 
+    private Player _player;
     private Texture _blockTex;
+
     private BlockPos _startPos;
     private Facing _direction;
     private int _length;
@@ -23,13 +25,15 @@ public class CreativeBuilding : Node2D
 
     public override void _Ready()
     {
+        _player   = GetParent<Player>();
         _blockTex = GD.Load<Texture>("res://gfx/block.png");
     }
 
     public override void _PhysicsProcess(float delta)
     {
-        if (!(this.GetGame() is Client client)) return;
-        Update();
+        if (!_player.IsLocal) return;
+        var client = this.GetClient();
+        Update(); // Make sure _Draw is being called.
 
         if (EscapeMenu.Instance.Visible || !client.Cursor.Visible)
             { _currentMode = null; return; }
