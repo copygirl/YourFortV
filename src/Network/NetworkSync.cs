@@ -13,8 +13,11 @@ public static class NetworkSync
     private static readonly List<SyncObjectInfo> _infoByID = new List<SyncObjectInfo>();
     private static readonly Dictionary<Type, SyncObjectInfo> _infoByType = new Dictionary<Type, SyncObjectInfo>();
 
-    private static readonly Dictionary<(Game, uint), SyncStatus> _statusBySyncID = new Dictionary<(Game, uint), SyncStatus>();
-    private static readonly Dictionary<Node, SyncStatus> _statusByObject = new Dictionary<Node, SyncStatus>();
+    // TODO: Rework NetworkSync to be an instance on the Game object.
+    private static readonly Dictionary<uint, SyncStatus> _serverStatusBySyncID = new Dictionary<uint, SyncStatus>();
+    private static readonly Dictionary<Node, SyncStatus> _serverStatusByObject = new Dictionary<Node, SyncStatus>();
+    private static readonly Dictionary<uint, SyncStatus> _clientStatusBySyncID = new Dictionary<uint, SyncStatus>();
+    private static readonly Dictionary<Node, SyncStatus> _clientStatusByObject = new Dictionary<Node, SyncStatus>();
     private static readonly HashSet<SyncStatus> _dirtyObjects = new HashSet<SyncStatus>();
     private static uint _syncIDCounter = 1;
 
@@ -33,8 +36,8 @@ public static class NetworkSync
 
         var obj    = info.InstanceScene.Init<T>();
         var status = new SyncStatus(_syncIDCounter++, obj, info){ Special = Special.Spawn };
-        _statusBySyncID.Add((server, status.SyncID), status);
-        _statusByObject.Add(status.Object, status);
+        _serverStatusBySyncID.Add(status.SyncID, status);
+        _serverStatusByObject.Add(status.Object, status);
         _dirtyObjects.Add(status);
         server.GetNode(info.ContainerNodePath).AddChild(obj);
 
@@ -47,8 +50,8 @@ public static class NetworkSync
         if (!(obj.GetGame() is Server)) return;
 
         status.Special = Special.Destroy;
-        _statusBySyncID.Remove((obj.GetGame(), status.SyncID));
-        _statusByObject.Remove(status.Object);
+        _serverStatusBySyncID.Remove(status.SyncID);
+        _serverStatusByObject.Remove(status.Object);
         _dirtyObjects.Add(status);
 
         obj.GetParent().RemoveChild(obj);
@@ -82,6 +85,8 @@ public static class NetworkSync
                 if ((status.DirtyProperties & (1 << prop.ID)) != 0)
                     values.Add((prop.ID, prop.Getter(status.Object)));
             packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.SyncID, status.Special, values));
+            // If the object has been newly spawned, now is the time to remove the "Spawn" flag.
+            if (status.Special == Special.Spawn) status.Special = Special.None;
         }
         // TODO: Need a different way to send packages to all *properly* connected peers.
         NetworkPackets.Send(server, server.CustomMultiplayer.GetNetworkConnectedPeers().Select(id => new NetworkID(id)), packet);
@@ -92,25 +97,28 @@ public static class NetworkSync
     internal static void SendAllObjects(Server server, NetworkID networkID)
     {
         var packet = new SyncPacket();
-        foreach (var status in _statusByObject.Values) {
+        foreach (var status in _serverStatusByObject.Values) {
             var values = new List<(byte, object)>();
             foreach (var prop in status.Info.PropertiesByID)
                 values.Add((prop.ID, prop.Getter(status.Object)));
-            packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.SyncID, status.Special, values));
+            packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.SyncID, Special.Spawn, values));
         }
         NetworkPackets.Send(server, new []{ networkID }, packet);
     }
 
-    internal static void ClearAllObjects()
+    internal static void ClearAllObjects(Game game)
     {
-        foreach (var (node, _) in _statusByObject) {
+        var statusByObject = (game is Server) ? _serverStatusByObject : _clientStatusByObject;
+        var statusBySyncID = (game is Server) ? _serverStatusBySyncID : _clientStatusBySyncID;
+
+        foreach (var (node, _) in statusByObject) {
             if (!Godot.Object.IsInstanceValid(node)) continue;
             node.GetParent().RemoveChild(node);
             node.QueueFree();
         }
 
-        _statusByObject.Clear();
-        _statusBySyncID.Clear();
+        statusByObject.Clear();
+        statusBySyncID.Clear();
         _dirtyObjects.Clear();
         _syncIDCounter = 1;
     }
@@ -118,13 +126,17 @@ public static class NetworkSync
     public static uint GetSyncID(this Node obj)
         => GetSyncStatus(obj).SyncID;
     public static Node GetObjectBySyncID(this Game game, uint syncID)
-        => _statusBySyncID.TryGetValue((game, syncID), out var value) ? value.Object : null;
+    {
+        var statusBySyncID = (game is Server) ? _serverStatusBySyncID : _clientStatusBySyncID;
+        return statusBySyncID.TryGetValue(syncID, out var value) ? value.Object : null;
+    }
 
     private static SyncStatus GetSyncStatus(Node obj)
     {
         if (obj.GetType().GetCustomAttribute<SyncObjectAttribute>() == null)
             throw new ArgumentException($"Type {obj.GetType()} is missing {nameof(SyncObjectAttribute)}");
-        if (!_statusByObject.TryGetValue(obj, out var value)) throw new Exception(
+        var statusByObject = (obj.GetGame() is Server) ? _serverStatusByObject : _clientStatusByObject;
+        if (!statusByObject.TryGetValue(obj, out var value)) throw new Exception(
             $"No {nameof(SyncStatus)} found for '{obj.Name}' ({obj.GetType()})");
         return value;
     }
@@ -238,22 +250,24 @@ public static class NetworkSync
                 $"Unknown {nameof(SyncObjectInfo)} with ID {packetObj.InfoID}");
             var info = _infoByID[packetObj.InfoID];
 
-            if (!_statusBySyncID.TryGetValue((game, packetObj.SyncID), out var status)) {
-                if (packetObj.Special != Special.Spawn)
-                    throw new Exception($"Unknown synced object with ID {packetObj.SyncID}");
+            if (!_clientStatusBySyncID.TryGetValue(packetObj.SyncID, out var status)) {
+                if (packetObj.Special != Special.Spawn) throw new Exception(
+                    $"Unknown synced object {info.Name} (ID {packetObj.SyncID})");
 
                 var obj = info.InstanceScene.Init<Node>();
                 status  = new SyncStatus(packetObj.SyncID, obj, info);
-                _statusBySyncID.Add((game, status.SyncID), status);
-                _statusByObject.Add(status.Object, status);
+                _clientStatusBySyncID.Add(status.SyncID, status);
+                _clientStatusByObject.Add(status.Object, status);
                 game.GetNode(info.ContainerNodePath).AddChild(obj);
             } else {
+                if (packetObj.Special == Special.Spawn) throw new Exception(
+                    $"Spawning object {info.Name} with ID {packetObj.SyncID}, but it already exists");
                 if (info != status.Info) throw new Exception(
-                    $"Info doesn't match ({info.Name} != {status.Info.Name})");
+                    $"Info of synced object being modified doesn't match ({info.Name} != {status.Info.Name})");
 
                 if (packetObj.Special == Special.Destroy) {
-                    _statusBySyncID.Remove((game, status.SyncID));
-                    _statusByObject.Remove(status.Object);
+                    _clientStatusBySyncID.Remove(status.SyncID);
+                    _clientStatusByObject.Remove(status.Object);
 
                     status.Object.GetParent().RemoveChild(status.Object);
                     status.Object.QueueFree();
