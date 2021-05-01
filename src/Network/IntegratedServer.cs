@@ -18,7 +18,7 @@ public class IntegratedServer : Node
         Server = _sceneTree.Root.GetChild<Server>(0);
         // Spawn default blocks.
         for (var x = -6; x <= 6; x++) {
-            var block = Server.Spawn<Block>();
+            var block = Server.Sync.Spawn<Block>();
             block.Position    = new BlockPos(x, 3);
             block.Color       = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
             block.Unbreakable = true;

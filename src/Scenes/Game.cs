@@ -4,6 +4,8 @@ using Godot.Collections;
 
 public abstract class Game : Node2D
 {
+    public Sync Sync { get; protected set; }
+
 	[Export] public NodePath PlayerContainerPath { get; set; }
 	[Export] public NodePath BlockContainerPath { get; set; }
 

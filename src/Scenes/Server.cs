@@ -5,6 +5,8 @@ using Godot;
 // TODO: Allow for initially private integrated server to open itself up to the public.
 public class Server : Game
 {
+    public new SyncServer Sync => (SyncServer)base.Sync;
+
     private readonly Dictionary<NetworkID, Player> _playersByNetworkID = new Dictionary<NetworkID, Player>();
     private readonly Dictionary<Player, NetworkID> _networkIDByPlayer = new Dictionary<Player, NetworkID>();
 
@@ -17,6 +19,7 @@ public class Server : Game
 
     public Server()
     {
+        base.Sync = new SyncServer(this);
         CustomMultiplayer = new MultiplayerAPI { RootNode = this };
         CustomMultiplayer.Connect("network_peer_connected", this, nameof(OnPeerConnected));
         CustomMultiplayer.Connect("network_peer_disconnected", this, nameof(OnPeerDisconnected));
@@ -26,7 +29,7 @@ public class Server : Game
     public override void _Process(float delta)
     {
         CustomMultiplayer.Poll();
-        NetworkSync.ProcessDirty(this);
+        Sync.ProcessDirty(this);
         NetworkRPC.ProcessPacketBuffer(this);
     }
 
@@ -103,8 +106,8 @@ public class Server : Game
             _playersByNetworkID.Add(networkID, player);
             _networkIDByPlayer[player] = networkID;
         } else {
-            NetworkSync.SendAllObjects(this, networkID);
-            player = this.Spawn<Player>();
+            Sync.SendAllObjects(this, networkID);
+            player = Sync.Spawn<Player>();
             player.Position = Vector2.Zero;
             player.Color    = Colors.Red;
 
@@ -124,7 +127,7 @@ public class Server : Game
         // Local player stays around for reconnecting.
         if (_localPlayer == player) return;
 
-        player.Destroy();
+        Sync.Destroy(player);
         _playersByNetworkID.Remove(networkID);
         _networkIDByPlayer.Remove(player);
     }

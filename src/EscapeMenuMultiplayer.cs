@@ -135,13 +135,13 @@ public class EscapeMenuMultiplayer : Container
 
         if (IntegratedServer != null) {
             IntegratedServer.Server.Stop();
-            NetworkSync.ClearAllObjects(IntegratedServer.Server);
+            IntegratedServer.Server.Sync.Clear();
             IntegratedServer.GetParent().RemoveChild(IntegratedServer);
             IntegratedServer.QueueFree();
             IntegratedServer = null;
 
             client.Disconnect();
-            NetworkSync.ClearAllObjects(client);
+            client.Sync.Clear();
         }
 
         if (client.Status == ConnectionStatus.Disconnected) {
@@ -156,7 +156,7 @@ public class EscapeMenuMultiplayer : Container
             client.Connect(address, port);
         } else {
             client.Disconnect();
-            NetworkSync.ClearAllObjects(client);
+            client.Sync.Clear();
         }
     }
 }

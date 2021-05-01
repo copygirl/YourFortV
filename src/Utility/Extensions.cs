@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Godot;
 
 public static class Extensions
@@ -9,6 +10,12 @@ public static class Extensions
         => node.GetGame() as Client;
     public static Server GetServer(this Node node)
         => node.GetGame() as Server;
+
+    public static TValue SetSync<TObject, TValue>(
+        this TObject obj, TValue value,
+        [CallerMemberName] string property = null)
+            where TObject : Node
+        { obj.GetServer()?.Sync.MarkDirty(obj, property); return value; }
 
     public static T Init<T>(this PackedScene @this)
         where T : Node

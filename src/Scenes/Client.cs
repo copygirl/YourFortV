@@ -8,14 +8,17 @@ public class Client : Game
     [Export] public NodePath CursorPath { get; set; }
     public Cursor Cursor { get; private set; }
 
+    public new SyncClient Sync => (SyncClient)base.Sync;
     public ConnectionStatus Status => CustomMultiplayer.NetworkPeer?.GetConnectionStatus() ?? ConnectionStatus.Disconnected;
 
     public event Action Connected;
     public event Action Disconnected;
     public event Action<ConnectionStatus> StatusChanged;
 
+
     public Client()
     {
+        base.Sync = new SyncClient(this);
         CustomMultiplayer = new MultiplayerAPI { RootNode = this };
         CustomMultiplayer.Connect("connected_to_server", this, nameof(OnConnectedToServer));
         CustomMultiplayer.Connect("connection_failed", this, nameof(Disconnect));

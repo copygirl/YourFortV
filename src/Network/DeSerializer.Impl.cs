@@ -220,11 +220,11 @@ public class SyncedObjectDeSerializerGenerator
         where TObj : Node
     {
         public override void Serialize(Game game, BinaryWriter writer, TObj value)
-            => writer.Write(value.GetSyncID());
+            => writer.Write(game.Sync.GetStatusOrThrow(value).SyncID);
         public override TObj Deserialize(Game game, BinaryReader reader)
         {
             var id    = reader.ReadUInt32();
-            var value = (TObj)game.GetObjectBySyncID(id);
+            var value = (TObj)game.Sync.GetStatusOrThrow(id).Object;
             if (value == null) throw new Exception($"Could not find synced object of type {typeof(TObj)} with ID {id}");
             return value;
         }
