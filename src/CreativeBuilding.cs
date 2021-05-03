@@ -108,7 +108,7 @@ public class CreativeBuilding : Node2D
             .ToArray();
 
         foreach (var pos in validLocations) {
-            var block = server.Sync.Spawn<Block>();
+            var block = server.Spawn<Block>();
             block.Position = pos;
             block.Color    = player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
         }
@@ -122,7 +122,7 @@ public class CreativeBuilding : Node2D
         foreach (var pos in GetBlockPositions(start, direction, length)) {
             var block = server.GetBlockAt(pos);
             if (block?.Unbreakable != false) continue;
-            server.Sync.Destroy(block);
+            block.RemoveFromParent();
         }
     }
 }

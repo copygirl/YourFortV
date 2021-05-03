@@ -6,14 +6,52 @@ using Godot;
 
 // TODO: Allow syncronization of child objects spawned with their parent objects.
 // TODO: Specify who properties are syncronized with. (Owner, Friends, Team, Everyone)
-public class Sync
+public abstract class Sync
 {
     protected Game Game { get; }
     protected Dictionary<UniqueID, SyncStatus> StatusByID { get; } = new Dictionary<UniqueID, SyncStatus>();
     protected Dictionary<Node, SyncStatus> StatusByObject { get; } = new Dictionary<Node, SyncStatus>();
 
-    static Sync() => DeSerializerRegistry.Register(new SyncPacketObjectDeSerializer());
-    public Sync(Game game) => Game = game;
+    static Sync()
+        => DeSerializerRegistry.Register(new SyncPacketObjectDeSerializer());
+
+    public Sync(Game game)
+    {
+        Game = game;
+        Game.Objects.Added   += OnObjectAdded;
+        Game.Objects.Removed += OnObjectRemoved;
+        Game.Objects.Cleared += OnObjectsCleared;
+    }
+
+    private void OnObjectAdded(UniqueID id, Node obj)
+    {
+        var info = SyncRegistry.GetOrNull(obj.GetType());
+        if (info == null) return;
+
+        var status = new SyncStatus(id, obj, info);
+        StatusByID.Add(id, status);
+        StatusByObject.Add(obj, status);
+        OnSyncedAdded(status);
+    }
+
+    private void OnObjectRemoved(UniqueID id, Node obj)
+    {
+        if (!StatusByObject.TryGetValue(obj, out var status)) return;
+
+        StatusByID.Remove(status.ID);
+        StatusByObject.Remove(status.Object);
+        OnSyncedRemoved(status);
+    }
+
+    protected virtual void OnSyncedAdded(SyncStatus status) {  }
+    protected virtual void OnSyncedRemoved(SyncStatus status) {  }
+
+    private void OnObjectsCleared()
+    {
+        StatusByID.Clear();
+        StatusByObject.Clear();
+    }
+
 
     public SyncStatus GetStatusOrNull(UniqueID id)
         => StatusByID.TryGetValue(id, out var value) ? value : null;
@@ -30,18 +68,6 @@ public class Sync
     public SyncStatus GetStatusOrThrow(Node obj)
         => GetStatusOrNull(obj) ?? throw new Exception(
             $"No {nameof(SyncStatus)} found for '{obj.Name}' ({obj.GetType()})");
-
-    public virtual void Clear()
-    {
-        foreach (var (node, _) in StatusByObject) {
-            if (!Godot.Object.IsInstanceValid(node)) continue;
-            node.GetParent().RemoveChild(node);
-            node.QueueFree();
-        }
-
-        StatusByID.Clear();
-        StatusByObject.Clear();
-    }
 }
 
 
@@ -91,12 +117,11 @@ internal class SyncPacketObjectDeSerializer
         writer.Write((byte)value.Mode);
         writer.Write((byte)value.Values.Count);
 
-        var objInfo = SyncRegistry.Get(value.InfoID);
+        var objInfo = SyncRegistry.GetOrThrow(value.InfoID);
         foreach (var (propID, val) in value.Values) {
             writer.Write(propID);
             var propInfo = objInfo.PropertiesByID[propID];
-            var deSerializer = DeSerializerRegistry.Get(propInfo.Type, false);
-            deSerializer.Serialize(game, writer, val);
+            propInfo.DeSerializer.Serialize(game, writer, val);
         }
     }
 
@@ -107,7 +132,7 @@ internal class SyncPacketObjectDeSerializer
         var mode   = (SyncMode)reader.ReadByte();
         var count  = reader.ReadByte();
 
-        var objInfo = SyncRegistry.Get(infoID);
+        var objInfo = SyncRegistry.GetOrThrow(infoID);
         if (count > objInfo.PropertiesByID.Count) throw new Exception(
             $"Count is higher than possible number of changes");
 
@@ -120,8 +145,7 @@ internal class SyncPacketObjectDeSerializer
             var propInfo = objInfo.PropertiesByID[propID];
             if (!duplicateCheck.Add(propID)) throw new Exception(
                 $"Duplicate entry for property {propInfo.Name}");
-            var deSerializer = DeSerializerRegistry.Get(propInfo.Type, false);
-            values.Add((propID, deSerializer.Deserialize(game, reader)));
+            values.Add((propID, propInfo.DeSerializer.Deserialize(game, reader)));
         }
 
         return new SyncPacket.Object(infoID, id, mode, values);

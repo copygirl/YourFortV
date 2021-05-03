@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://ui_theme.tres" type="Theme" id=1]
 [ext_resource path="res://src/EscapeMenu.cs" type="Script" id=2]
 [ext_resource path="res://gfx/player.png" type="Texture" id=3]
 [ext_resource path="res://src/EscapeMenuMultiplayer.cs" type="Script" id=4]
 [ext_resource path="res://src/EscapeMenuAppearance.cs" type="Script" id=5]
+[ext_resource path="res://src/EscapeMenuWorld.cs" type="Script" id=6]
 
 [node name="EscapeMenu" type="Control"]
 anchor_right = 1.0
@@ -23,6 +24,47 @@ anchor_bottom = 1.0
 color = Color( 0, 0, 0, 0.501961 )
 __meta__ = {
 "_edit_lock_": true
+}
+
+[node name="SaveFileDialog" type="FileDialog" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -240.0
+margin_top = -160.0
+margin_right = 240.0
+margin_bottom = 160.0
+rect_min_size = Vector2( 0, 0 )
+window_title = "Save World As..."
+mode_overrides_title = false
+access = 2
+filters = PoolStringArray( "*.yf5 ; YourFortV Save" )
+current_dir = "/"
+current_path = "/"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="LoadFileDialog" type="FileDialog" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -240.0
+margin_top = -160.0
+margin_right = 240.0
+margin_bottom = 160.0
+rect_min_size = Vector2( 0, 0 )
+window_title = "Load World From..."
+mode_overrides_title = false
+mode = 0
+access = 2
+filters = PoolStringArray( "*.yf5 ; YourFortV Save" )
+current_dir = "/"
+current_path = "/"
+__meta__ = {
+"_edit_use_anchors_": false
 }
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
@@ -66,8 +108,7 @@ margin_bottom = 17.0
 margin_top = 21.0
 margin_right = 229.0
 margin_bottom = 139.0
-custom_constants/side_margin = 4
-tab_align = 0
+custom_constants/side_margin = 0
 use_hidden_tabs_for_min_size = true
 
 [node name="Appearance" type="CenterContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer"]
@@ -148,7 +189,7 @@ text = "(Close Menu to apply changes.)"
 align = 1
 valign = 2
 
-[node name="Multiplayer" type="VBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer"]
+[node name="Multiplayer" type="CenterContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer"]
 visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -157,20 +198,24 @@ margin_top = 27.0
 margin_right = -4.0
 margin_bottom = -4.0
 script = ExtResource( 4 )
-StatusPath = NodePath("ContainerStatus/Status")
-ServerOpenClosePath = NodePath("ContainerServer/ServerOpenClose")
-ServerPortPath = NodePath("ContainerServer/ServerPort")
-ClientDisConnectPath = NodePath("ContainerClient/ClientDisConnect")
-ClientAddressPath = NodePath("ContainerClient/ClientAddress")
+StatusPath = NodePath("VBoxContainer/ContainerStatus/Status")
+ServerOpenClosePath = NodePath("VBoxContainer/ContainerServer/ServerOpenClose")
+ServerPortPath = NodePath("VBoxContainer/ContainerServer/ServerPort")
+ClientDisConnectPath = NodePath("VBoxContainer/ContainerClient/ClientDisConnect")
+ClientAddressPath = NodePath("VBoxContainer/ContainerClient/ClientAddress")
 
-[node name="ContainerStatus" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+margin_right = 221.0
+margin_bottom = 87.0
+
+[node name="ContainerStatus" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer"]
 margin_right = 221.0
 margin_bottom = 13.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerStatus"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerStatus"]
 margin_top = 2.0
 margin_right = 36.0
 margin_bottom = 11.0
@@ -178,7 +223,7 @@ rect_min_size = Vector2( 36, 0 )
 text = "Status:"
 align = 2
 
-[node name="Status" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerStatus"]
+[node name="Status" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerStatus"]
 modulate = Color( 1, 0, 0, 1 )
 margin_left = 40.0
 margin_right = 221.0
@@ -193,12 +238,12 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ContainerServer" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+[node name="ContainerServer" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer"]
 margin_top = 17.0
 margin_right = 221.0
 margin_bottom = 36.0
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerServer"]
 margin_top = 5.0
 margin_right = 36.0
 margin_bottom = 14.0
@@ -206,7 +251,7 @@ rect_min_size = Vector2( 36, 0 )
 text = "Port:"
 align = 2
 
-[node name="ServerPort" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer"]
+[node name="ServerPort" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerServer"]
 margin_left = 40.0
 margin_right = 90.0
 margin_bottom = 19.0
@@ -218,7 +263,7 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ServerOpenClose" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer"]
+[node name="ServerOpenClose" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerServer"]
 margin_left = 94.0
 margin_right = 221.0
 margin_bottom = 19.0
@@ -228,12 +273,12 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ContainerClient" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+[node name="ContainerClient" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer"]
 margin_top = 40.0
 margin_right = 221.0
 margin_bottom = 59.0
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerClient"]
 margin_top = 5.0
 margin_right = 36.0
 margin_bottom = 14.0
@@ -241,7 +286,7 @@ rect_min_size = Vector2( 36, 0 )
 text = "Address:"
 align = 2
 
-[node name="ClientAddress" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient"]
+[node name="ClientAddress" type="LineEdit" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerClient"]
 margin_left = 40.0
 margin_right = 160.0
 margin_bottom = 19.0
@@ -249,7 +294,7 @@ rect_min_size = Vector2( 120, 0 )
 align = 1
 caret_blink = true
 
-[node name="ClientDisConnect" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient"]
+[node name="ClientDisConnect" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerClient"]
 margin_left = 164.0
 margin_right = 221.0
 margin_bottom = 19.0
@@ -257,23 +302,146 @@ rect_min_size = Vector2( 57, 0 )
 size_flags_horizontal = 3
 text = "Connect"
 
-[node name="ContainerHideAddress" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer"]
+[node name="ContainerHideAddress" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer"]
 margin_top = 63.0
 margin_right = 221.0
 margin_bottom = 87.0
 
-[node name="HideAddress" type="CheckBox" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerHideAddress"]
+[node name="HideAddress" type="CheckBox" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerHideAddress"]
 margin_right = 82.0
 margin_bottom = 24.0
 text = "Hide Address"
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerHideAddress"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerHideAddress"]
 margin_left = 86.0
 margin_top = 7.0
 margin_right = 173.0
 margin_bottom = 16.0
 custom_colors/font_color = Color( 0.6, 0.6, 0.6, 1 )
 text = "(for streamers etc.)"
+
+[node name="World" type="CenterContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 4.0
+margin_top = 27.0
+margin_right = -4.0
+margin_bottom = -4.0
+script = ExtResource( 6 )
+FilenamePath = NodePath("VBoxContainer/HBoxContainer/Filename")
+LastSavedPath = NodePath("VBoxContainer/HBoxContainer3/LastSaved")
+PlaytimePath = NodePath("VBoxContainer/HBoxContainer2/Playtime")
+QuickSavePath = NodePath("VBoxContainer/HBoxContainer4/QuickSave")
+SaveAsPath = NodePath("VBoxContainer/HBoxContainer4/SaveAs")
+SaveFileDialogPath = NodePath("../../../../../SaveFileDialog")
+LoadFileDialogPath = NodePath("../../../../../LoadFileDialog")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World"]
+margin_left = 20.0
+margin_top = 1.0
+margin_right = 200.0
+margin_bottom = 86.0
+rect_min_size = Vector2( 180, 0 )
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer"]
+margin_right = 180.0
+margin_bottom = 9.0
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer"]
+margin_right = 58.0
+margin_bottom = 9.0
+rect_min_size = Vector2( 58, 0 )
+text = "Filename:"
+align = 2
+
+[node name="Filename" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer"]
+margin_left = 62.0
+margin_right = 180.0
+margin_bottom = 9.0
+size_flags_horizontal = 3
+custom_colors/font_color = Color( 0.6, 0.6, 0.6, 1 )
+text = "-not saved yet-"
+align = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer"]
+margin_top = 13.0
+margin_right = 180.0
+margin_bottom = 22.0
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer2"]
+margin_right = 58.0
+margin_bottom = 9.0
+rect_min_size = Vector2( 58, 0 )
+text = "Playtime:"
+align = 2
+
+[node name="Playtime" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer2"]
+margin_left = 62.0
+margin_right = 180.0
+margin_bottom = 9.0
+size_flags_horizontal = 3
+custom_colors/font_color = Color( 0.6, 0.6, 0.6, 1 )
+text = "000d 00h 00m 00s"
+align = 1
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer"]
+margin_top = 26.0
+margin_right = 180.0
+margin_bottom = 35.0
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer3"]
+margin_right = 58.0
+margin_bottom = 9.0
+rect_min_size = Vector2( 58, 0 )
+text = "Last Saved:"
+align = 2
+
+[node name="LastSaved" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer3"]
+margin_left = 62.0
+margin_right = 180.0
+margin_bottom = 9.0
+size_flags_horizontal = 3
+custom_colors/font_color = Color( 0.6, 0.6, 0.6, 1 )
+text = "0000-00-00 00:00"
+align = 1
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer"]
+margin_top = 39.0
+margin_right = 180.0
+margin_bottom = 43.0
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer"]
+margin_top = 47.0
+margin_right = 180.0
+margin_bottom = 64.0
+
+[node name="QuickSave" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer4"]
+margin_right = 112.0
+margin_bottom = 17.0
+rect_min_size = Vector2( 112, 17 )
+size_flags_horizontal = 3
+text = "Quick Save"
+
+[node name="SaveAs" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer4"]
+margin_left = 116.0
+margin_right = 180.0
+margin_bottom = 17.0
+rect_min_size = Vector2( 0, 17 )
+size_flags_horizontal = 3
+text = "Save As..."
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer"]
+margin_top = 68.0
+margin_right = 180.0
+margin_bottom = 85.0
+
+[node name="LoadFrom" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer5"]
+margin_right = 180.0
+margin_bottom = 17.0
+rect_min_size = Vector2( 80, 17 )
+size_flags_horizontal = 3
+text = "Load World From..."
 
 [node name="HSeparator2" type="HSeparator" parent="CenterContainer/PanelContainer/VBoxContainer"]
 margin_top = 143.0
@@ -333,12 +501,17 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[connection signal="file_selected" from="SaveFileDialog" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World" method="_on_SaveFileDialog_file_selected"]
+[connection signal="file_selected" from="LoadFileDialog" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World" method="_on_LoadFileDialog_file_selected"]
 [connection signal="visibility_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Appearance_visibility_changed"]
 [connection signal="text_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerName/DisplayName" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_DisplayName_text_changed"]
 [connection signal="value_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance/VBoxContainer/ContainerColor/Hue" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Appearance" method="_on_Hue_value_changed"]
-[connection signal="text_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer/ServerPort" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerPort_text_changed"]
-[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerServer/ServerOpenClose" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerOpenClose_pressed"]
-[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerClient/ClientDisConnect" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ClientDisConnect_pressed"]
-[connection signal="toggled" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/ContainerHideAddress/HideAddress" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_HideAddress_toggled"]
+[connection signal="text_changed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerServer/ServerPort" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerPort_text_changed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerServer/ServerOpenClose" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ServerOpenClose_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerClient/ClientDisConnect" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_ClientDisConnect_pressed"]
+[connection signal="toggled" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer/VBoxContainer/ContainerHideAddress/HideAddress" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/Multiplayer" method="_on_HideAddress_toggled"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer4/QuickSave" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World" method="_on_QuickSave_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer4/SaveAs" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World" method="_on_SaveAs_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World/VBoxContainer/HBoxContainer5/LoadFrom" to="CenterContainer/PanelContainer/VBoxContainer/TabContainer/World" method="_on_LoadFrom_pressed"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/Quit" to="." method="_on_Quit_pressed"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/VBoxContainer/Return" to="." method="_on_Return_pressed"]

@@ -2,7 +2,7 @@ using System;
 using Godot;
 
 // TODO: Maybe figure out how we can make different classes (LocalPlayer, NPCPlayer) synchronizable.
-[Sync]
+[Spawn, Sync]
 public class Player : KinematicBody2D, IInitializer
 {
     [Export] public NodePath DisplayNamePath { get; set; }
@@ -101,7 +101,7 @@ public class Player : KinematicBody2D, IInitializer
     }
 
     [RPC(PacketDirection.ServerToClient)]
-    private void ResetPosition(Vector2 position)
+    public void ResetPosition(Vector2 position)
     {
         base.Position = position;
         Velocity      = Vector2.Zero;

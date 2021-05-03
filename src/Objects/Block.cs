@@ -1,15 +1,15 @@
 using Godot;
 
-[Sync]
+[Spawn, Sync, Save]
 public class Block : StaticBody2D
 {
-    [Sync]
+    [Sync, Save]
     public new BlockPos Position {
         get => BlockPos.FromVector(base.Position);
         set => base.Position = this.SetSync(value).ToVector();
     }
 
-    [Sync]
+    [Sync, Save]
     public Color Color {
         get => Modulate;
         set => Modulate = this.SetSync(value);

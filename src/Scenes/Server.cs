@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 // TODO: Allow for initially private integrated server to open itself up to the public.
@@ -79,6 +80,8 @@ public class Server : Game
     }
 
 
+    public IEnumerable<(NetworkID, Player)> Players
+        => _playersByNetworkID.Select(entry => (entry.Key, entry.Value));
     public Player GetPlayer(NetworkID networkID)
         => _playersByNetworkID[networkID];
     public NetworkID GetNetworkID(Player player)
@@ -107,7 +110,7 @@ public class Server : Game
             _networkIDByPlayer[player] = networkID;
         } else {
             Sync.SendAllObjects(this, networkID);
-            player = Sync.Spawn<Player>();
+            player = this.Spawn<Player>();
             player.Position = Vector2.Zero;
             player.Color    = Colors.Red;
 
@@ -127,7 +130,7 @@ public class Server : Game
         // Local player stays around for reconnecting.
         if (_localPlayer == player) return;
 
-        Sync.Destroy(player);
+        player.RemoveFromParent();
         _playersByNetworkID.Remove(networkID);
         _networkIDByPlayer.Remove(player);
     }

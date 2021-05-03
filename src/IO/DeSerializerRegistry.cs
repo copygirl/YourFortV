@@ -56,8 +56,12 @@ public static class DeSerializerRegistry
             if (!createIfMissing) throw new InvalidOperationException(
                 $"No DeSerializer for type {type} found");
 
-            value = _generators.Select(g => g.GenerateFor(type)).FirstOrDefault(x => x != null);
-            if (value == null) value = new ComplexDeSerializer(type);
+            value = _generators.Select(g => g.GenerateFor(type))
+                               .FirstOrDefault(x => x != null);
+            if (value == null) {
+                var deSerializerType = typeof(ComplexDeSerializer<>).MakeGenericType(type);
+                value = (IDeSerializer)Activator.CreateInstance(deSerializerType);
+            }
             _byType.Add(type, value);
         }
         return value;

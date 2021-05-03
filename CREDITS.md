@@ -5,5 +5,7 @@
 **URL:** https://arcade.itch.io/heartbit  
 **Author:** Void  
 **License:** Custom  
-> You can use this font in free and personal projects, works or games.
+> You can use this font in free and personal projects, works or games.  
 > You'll need to pay the suggested price for commercial projects.
+
+**Notes:** Modified `1` and `V` characters.

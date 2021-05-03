@@ -5,6 +5,8 @@ public class IntegratedServer : Node
     private SceneTree _sceneTree;
     public Server Server { get; private set; }
 
+    public IntegratedServer() => Name = "IntegratedServer";
+
     public override void _Ready()
     {
         _sceneTree = new SceneTree();
@@ -12,13 +14,13 @@ public class IntegratedServer : Node
         _sceneTree.Root.RenderTargetUpdateMode = Godot.Viewport.UpdateMode.Disabled;
 
         var scene = GD.Load<PackedScene>("res://scene/ServerScene.tscn").Init<Server>();
-        _sceneTree.Root.AddChild(scene);
+        _sceneTree.Root.AddChild(scene, true);
         _sceneTree.CurrentScene = scene;
 
         Server = _sceneTree.Root.GetChild<Server>(0);
         // Spawn default blocks.
         for (var x = -6; x <= 6; x++) {
-            var block = Server.Sync.Spawn<Block>();
+            var block = Server.Spawn<Block>();
             block.Position    = new BlockPos(x, 3);
             block.Color       = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
             block.Unbreakable = true;

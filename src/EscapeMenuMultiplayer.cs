@@ -38,7 +38,7 @@ public class EscapeMenuMultiplayer : Container
     private void SetupIntegratedServer()
     {
         IntegratedServer = new IntegratedServer();
-        this.GetClient().AddChild(IntegratedServer);
+        this.GetClient().AddChild(IntegratedServer, true);
         CallDeferred(nameof(StartIntegratedServerAndConnect));
     }
     private void StartIntegratedServerAndConnect()
@@ -137,14 +137,11 @@ public class EscapeMenuMultiplayer : Container
             IntegratedServer.Server.Stop();
             // TODO: Have a single method to "reset" the state?
             IntegratedServer.Server.Objects.Clear();
-            IntegratedServer.Server.Sync.Clear();
-            IntegratedServer.GetParent().RemoveChild(IntegratedServer);
-            IntegratedServer.QueueFree();
+            IntegratedServer.RemoveFromParent();
             IntegratedServer = null;
 
             client.Disconnect();
             client.Objects.Clear();
-            client.Sync.Clear();
         }
 
         if (client.Status == ConnectionStatus.Disconnected) {
@@ -160,7 +157,6 @@ public class EscapeMenuMultiplayer : Container
         } else {
             client.Disconnect();
             client.Objects.Clear();
-            client.Sync.Clear();
         }
     }
 }

@@ -199,7 +199,7 @@ public class DictionaryDeSerializerGenerator
             var dictionary = new TDictionary();
             for (var i = 0; i < count; i++)
                 dictionary.Add((TKey)_keyDeSerializer.Deserialize(game, reader),
-                                (TValue)_valueDeSerializer.Deserialize(game, reader));
+                               (TValue)_valueDeSerializer.Deserialize(game, reader));
             return dictionary;
         }
     }
@@ -224,7 +224,7 @@ public class NodeDeSerializerGenerator
         public override TObj Deserialize(Game game, BinaryReader reader)
         {
             var id    = new UniqueID(reader.ReadUInt32());
-            var value = (TObj)game.Objects.GetNodeByID(id);
+            var value = (TObj)game.Objects.GetObjectByID(id);
             if (value == null) throw new Exception($"Could not find synced object of type {typeof(TObj)} with ID {id}");
             return value;
         }
@@ -232,31 +232,30 @@ public class NodeDeSerializerGenerator
 }
 
 // TODO: Replace this with something that will generate code at runtime for improved performance.
-public class ComplexDeSerializer
-    : IDeSerializer
+public class ComplexDeSerializer<T>
+    : DeSerializer<T>
 {
-    private readonly Type _type;
     private event Action<Game, BinaryWriter, object> OnSerialize;
     private event Action<Game, BinaryReader, object> OnDeserialize;
 
-    public ComplexDeSerializer(Type type)
+    public ComplexDeSerializer()
     {
-        _type = type;
-        foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
+        foreach (var field in typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
             var deSerializer = DeSerializerRegistry.Get(field.FieldType, true);
-            OnSerialize += (game, writer, value) => deSerializer.Serialize(game, writer, field.GetValue(value));
-            OnDeserialize += (game, reader, instance) => field.SetValue(instance, deSerializer.Deserialize(game, reader));
+            OnSerialize   += (game, writer, obj) => deSerializer.Serialize(game, writer, field.GetValue(obj));
+            OnDeserialize += (game, reader, obj) => field.SetValue(obj, deSerializer.Deserialize(game, reader));
         }
         if (OnSerialize == null) throw new InvalidOperationException(
-            $"Unable to create serializer for type {type}");
+            $"Unable to create {nameof(ComplexDeSerializer<T>)} for type {typeof(T)}");
     }
 
-    public void Serialize(Game game, BinaryWriter writer, object value)
+    public override void Serialize(Game game, BinaryWriter writer, T value)
         => OnSerialize(game, writer, value);
-    public object Deserialize(Game game, BinaryReader reader)
+
+    public override T Deserialize(Game game, BinaryReader reader)
     {
-        var instance = FormatterServices.GetUninitializedObject(_type);
-        OnDeserialize(game, reader, instance);
-        return instance;
+        var value = FormatterServices.GetUninitializedObject(typeof(T));
+        OnDeserialize(game, reader, value);
+        return (T)value;
     }
 }

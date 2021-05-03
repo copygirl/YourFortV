@@ -13,21 +13,17 @@ public class SyncClient : Sync
     private void OnSyncPacket(Game _, NetworkID networkID, SyncPacket packet)
     {
         foreach (var packetObj in packet.Changes) {
-            var info   = SyncRegistry.Get(packetObj.InfoID);
+            var info   = SyncRegistry.GetOrThrow(packetObj.InfoID);
             var status = GetStatusOrNull(packetObj.ID);
 
             if (status == null) {
                 if (packetObj.Mode != SyncMode.Spawn) throw new Exception(
                     $"Unknown synced object {info.Name} (ID {packetObj.ID})");
 
-                var obj = info.Scene.Init<Node>();
+                var obj = info.SpawnInfo.Scene.Init<Node>();
+                Client.GetNode("World").AddChild(obj, true);
                 Client.Objects.Add(packetObj.ID, obj);
-
-                status = new SyncStatus(packetObj.ID, obj, info);
-                StatusByID.Add(status.ID, status);
-                StatusByObject.Add(status.Object, status);
-
-                Client.GetNode("World").AddChild(obj);
+                status = GetStatusOrThrow(packetObj.ID);
             } else {
                 if (packetObj.Mode == SyncMode.Spawn) throw new Exception(
                     $"Spawning object {info.Name} with ID {packetObj.ID}, but it already exists");
@@ -35,18 +31,14 @@ public class SyncClient : Sync
                     $"Info of synced object being modified doesn't match ({info.Name} != {status.Info.Name})");
 
                 if (packetObj.Mode == SyncMode.Destroy) {
-                    StatusByID.Remove(status.ID);
-                    StatusByObject.Remove(status.Object);
-
-                    status.Object.GetParent().RemoveChild(status.Object);
-                    status.Object.QueueFree();
+                    status.Object.RemoveFromParent();
                     continue;
                 }
             }
 
             foreach (var (propID, value) in packetObj.Values) {
-                var propInfo = info.PropertiesByID[propID];
-                propInfo.Setter(status.Object, value);
+                var propDeSerializer = info.PropertiesByID[propID];
+                propDeSerializer.Set(status.Object, value);
             }
         }
     }

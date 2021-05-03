@@ -9,48 +9,31 @@ public class SyncServer : Sync
 
     protected Server Server => (Server)Game;
 
-    public SyncServer(Server server)
-        : base(server) {  }
+    public SyncServer(Server server) : base(server)
+        => server.Objects.Cleared += _dirtyObjects.Clear;
 
-    public T Spawn<T>()
-        where T : Node
+    protected override void OnSyncedAdded(SyncStatus status)
     {
-        var info = SyncRegistry.Get<T>();
-        var obj  = info.Scene.Init<T>();
-        var id   = Server.Objects.Add(obj);
-
-        var status = new SyncStatus(id, obj, info){ Mode = SyncMode.Spawn };
-        StatusByID.Add(status.ID, status);
-        StatusByObject.Add(status.Object, status);
+        status.Mode = SyncMode.Spawn;
         _dirtyObjects.Add(status);
-
-        Server.GetNode("World").AddChild(obj);
-
-        return obj;
     }
 
-    // TODO: Do this automatically if the node is removed from the tree?
-    public void Destroy(Node obj)
+    protected override void OnSyncedRemoved(SyncStatus status)
     {
-        var status = GetStatusOrThrow(obj);
-
         status.Mode = SyncMode.Destroy;
-        StatusByID.Remove(status.ID);
-        StatusByObject.Remove(status.Object);
         _dirtyObjects.Add(status);
-
-        obj.GetParent().RemoveChild(obj);
-        obj.QueueFree();
     }
+
 
     public void MarkDirty(Node obj, string property)
     {
         var status = GetStatusOrThrow(obj);
-        if (!status.Info.PropertiesByName.TryGetValue(property, out var propInfo)) throw new ArgumentException(
-            $"No {nameof(SyncPropertyInfo)} found for {obj.GetType()}.{property} (missing {nameof(SyncAttribute)}?)", nameof(property));
+        if (!status.Info.PropertiesByName.TryGetValue(property, out var propDeSerializer)) throw new ArgumentException(
+            $"No {nameof(IPropertyDeSerializer)} found for {obj.GetType()}.{property} (missing {nameof(SyncAttribute)}?)", nameof(property));
         if (!(obj.GetGame() is Server)) return;
 
-        status.DirtyProperties |= 1 << propInfo.ID;
+        var index = status.Info.PropertiesByID.IndexOf(propDeSerializer);
+        status.DirtyProperties |= 1 << index;
         _dirtyObjects.Add(status);
     }
 
@@ -62,9 +45,10 @@ public class SyncServer : Sync
         var packet = new SyncPacket();
         foreach (var status in _dirtyObjects) {
             var values = new List<(byte, object)>();
-            foreach (var prop in status.Info.PropertiesByID)
-                if ((status.DirtyProperties & (1 << prop.ID)) != 0)
-                    values.Add((prop.ID, prop.Getter(status.Object)));
+            if (status.Mode != SyncMode.Destroy)
+                for (byte i = 0; i < status.Info.PropertiesByID.Count; i++)
+                    if ((status.DirtyProperties & (1 << i)) != 0)
+                        values.Add((i, status.Info.PropertiesByID[i].Get(status.Object)));
             packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.ID, status.Mode, values));
             // If the object has been newly spawned, now is the time to remove the "Spawn" flag.
             if (status.Mode == SyncMode.Spawn) status.Mode = SyncMode.Default;
@@ -80,16 +64,10 @@ public class SyncServer : Sync
         var packet = new SyncPacket();
         foreach (var status in StatusByObject.Values) {
             var values = new List<(byte, object)>();
-            foreach (var prop in status.Info.PropertiesByID)
-                values.Add((prop.ID, prop.Getter(status.Object)));
+            for (byte i = 0; i < status.Info.PropertiesByID.Count; i++)
+                values.Add((i, status.Info.PropertiesByID[i].Get(status.Object)));
             packet.Changes.Add(new SyncPacket.Object(status.Info.ID, status.ID, SyncMode.Spawn, values));
         }
         NetworkPackets.Send(server, new []{ networkID }, packet);
-    }
-
-    public override void Clear()
-    {
-        base.Clear();
-        _dirtyObjects.Clear();
     }
 }
