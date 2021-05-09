@@ -25,14 +25,11 @@ public class EscapeMenuWorld : CenterContainer
     public FileDialog SaveFileDialog { get; private set; }
     public FileDialog LoadFileDialog { get; private set; }
 
-    private Node _world;
     private TimeSpan _playtime;
     private string _currentWorld;
 
     public override void _Ready()
     {
-        _world = this.GetClient().GetNode("World");
-
         FilenameLabel  = GetNode<Label>(FilenamePath);
         LastSavedLabel = GetNode<Label>(LastSavedPath);
         PlaytimeLabel  = GetNode<Label>(PlaytimePath);
@@ -56,7 +53,7 @@ public class EscapeMenuWorld : CenterContainer
 
     public override void _Process(float delta)
     {
-        if (!GetTree().Paused || (_world.PauseMode != PauseModeEnum.Stop))
+        if (!GetTree().Paused || (this.GetWorld().PauseMode != PauseModeEnum.Stop))
             _playtime += TimeSpan.FromSeconds(delta);
 
         var b = new StringBuilder();
@@ -69,7 +66,7 @@ public class EscapeMenuWorld : CenterContainer
 
     private void OnStatusChanged(ConnectionStatus status)
     {
-        var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer));
+        var server = this.GetClient().GetNodeOrNull<IntegratedServer>(nameof(IntegratedServer));
         GetParent<TabContainer>().SetTabDisabled(GetIndex(), server == null);
     }
 
@@ -88,17 +85,17 @@ public class EscapeMenuWorld : CenterContainer
 
     private void _on_SaveFileDialog_file_selected(string path)
     {
-        var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer)).Server;
-        var save   = Save.CreateFromWorld(server, _playtime);
-        save.WriteToFile(path + ".tmp");
-        File.Delete(path); // TODO: In later .NET, there is a File.Move(source, dest, overwrite).
-        File.Move(path + ".tmp", path);
+        // var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer)).Server;
+        // var save   = Save.CreateFromWorld(server, _playtime);
+        // save.WriteToFile(path + ".tmp");
+        // File.Delete(path); // TODO: In later .NET, there is a File.Move(source, dest, overwrite).
+        // File.Move(path + ".tmp", path);
 
-        _currentWorld = path;
-        FilenameLabel.Text = Path.GetFileName(path);
-        LastSavedLabel.Text = save.LastSaved.ToString("yyyy-MM-dd HH:mm");
-        QuickSaveButton.Visible = true;
-        SaveAsButton.Text = "Save As...";
+        // _currentWorld = path;
+        // FilenameLabel.Text = Path.GetFileName(path);
+        // LastSavedLabel.Text = save.LastSaved.ToString("yyyy-MM-dd HH:mm");
+        // QuickSaveButton.Visible = true;
+        // SaveAsButton.Text = "Save As...";
     }
 
     private void _on_LoadFrom_pressed()
@@ -109,25 +106,25 @@ public class EscapeMenuWorld : CenterContainer
 
     private void _on_LoadFileDialog_file_selected(string path)
     {
-        var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer)).Server;
-        var save   = Save.ReadFromFile(path);
+        // var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer)).Server;
+        // var save   = Save.ReadFromFile(path);
 
-        // Clear out all objects that have a SaveAttribute.
-        var objectsToRemove = server.Objects.Select(x => x.Item2)
-            .Where(x => SaveRegistry.GetOrNull(x.GetType()) != null).ToArray();
-        foreach (var obj in objectsToRemove) obj.RemoveFromParent();
+        // // Clear out all objects that have a SaveAttribute.
+        // var objectsToRemove = server.Objects.Select(x => x.Item2)
+        //     .Where(x => SaveRegistry.GetOrNull(x.GetType()) != null).ToArray();
+        // foreach (var obj in objectsToRemove) obj.RemoveFromParent();
 
-        // Reset players' positions.
-        foreach (var (id, player) in server.Players)
-            player.RPC(new []{ id }, player.ResetPosition, Vector2.Zero);
+        // // Reset players' positions.
+        // foreach (var (id, player) in server.Players)
+        //     player.RPC(new []{ id }, player.ResetPosition, Vector2.Zero);
 
-        save.AddToWorld(server);
-        _playtime = save.Playtime;
+        // save.AddToWorld(server);
+        // _playtime = save.Playtime;
 
-        _currentWorld = path;
-        FilenameLabel.Text = Path.GetFileName(path);
-        LastSavedLabel.Text = save.LastSaved.ToString("yyyy-MM-dd HH:mm");
-        QuickSaveButton.Visible = true;
-        SaveAsButton.Text = "Save As...";
+        // _currentWorld = path;
+        // FilenameLabel.Text = Path.GetFileName(path);
+        // LastSavedLabel.Text = save.LastSaved.ToString("yyyy-MM-dd HH:mm");
+        // QuickSaveButton.Visible = true;
+        // SaveAsButton.Text = "Save As...";
     }
 }

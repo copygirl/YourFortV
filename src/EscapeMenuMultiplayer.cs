@@ -38,7 +38,7 @@ public class EscapeMenuMultiplayer : Container
     private void SetupIntegratedServer()
     {
         IntegratedServer = new IntegratedServer();
-        this.GetClient().AddChild(IntegratedServer, true);
+        this.GetClient().AddChild(IntegratedServer);
         CallDeferred(nameof(StartIntegratedServerAndConnect));
     }
     private void StartIntegratedServerAndConnect()
@@ -77,9 +77,10 @@ public class EscapeMenuMultiplayer : Container
         ServerOpenClose.Text     = (IntegratedServer?.Server.IsSingleplayer == false) ? "Close Server" : "Open Server";
         ClientDisConnect.Text = ((IntegratedServer != null) || (status == ConnectionStatus.Disconnected)) ? "Connect" : "Disconnect";
 
-        var pauseMode = (IntegratedServer?.Server.IsSingleplayer == true) ? PauseModeEnum.Stop : PauseModeEnum.Process;
-        this.GetClient().GetNode("World").PauseMode = pauseMode;
-        if (IntegratedServer != null) IntegratedServer.Server.GetNode("World").PauseMode = pauseMode;
+        var isSingleplayer = IntegratedServer?.Server.IsSingleplayer == true;
+        var pauseMode      = isSingleplayer ? PauseModeEnum.Stop : PauseModeEnum.Process;
+        this.GetWorld().PauseMode = pauseMode;
+        if (IntegratedServer != null) IntegratedServer.Server.GetWorld().PauseMode = pauseMode;
 
         // TODO: Allow starting up the integrated server again when disconnected.
     }
@@ -135,13 +136,12 @@ public class EscapeMenuMultiplayer : Container
 
         if (IntegratedServer != null) {
             IntegratedServer.Server.Stop();
-            // TODO: Have a single method to "reset" the state?
-            IntegratedServer.Server.Objects.Clear();
-            IntegratedServer.RemoveFromParent();
+            client.RemoveChild(IntegratedServer);
+            IntegratedServer.QueueFree();
             IntegratedServer = null;
 
             client.Disconnect();
-            client.Objects.Clear();
+            this.GetWorld().Clear();
         }
 
         if (client.Status == ConnectionStatus.Disconnected) {
@@ -156,7 +156,7 @@ public class EscapeMenuMultiplayer : Container
             client.Connect(address, port);
         } else {
             client.Disconnect();
-            client.Objects.Clear();
+            this.GetWorld().Clear();
         }
     }
 }

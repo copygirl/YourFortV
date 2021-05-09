@@ -20,10 +20,11 @@ public class EscapeMenuAppearance : CenterContainer
         ColorSlider.Value = GD.Randf();
         ColorPreview.Modulate = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
 
-        this.GetClient().Connected += () =>
-            this.GetClient().RPC(Player.ChangeAppearance, DisplayName.Text, ColorPreview.Modulate);
+        // FIXME: LocalPlayer hasn't spawned yet on connection.
+        // var client = this.GetClient();
+        // client.Connected += () => client.LocalPlayer.RpcId(1,
+        //     nameof(Player.ChangeAppearance), DisplayName.Text, ColorPreview.Modulate);
     }
-
 
     #pragma warning disable IDE0051
     #pragma warning disable IDE1006
@@ -49,8 +50,8 @@ public class EscapeMenuAppearance : CenterContainer
     {
         if (IsVisibleInTree()) return;
         var client = this.GetClient();
-        // TODO: Find a better way to know if we're connected?
         if (client.Status == NetworkedMultiplayerPeer.ConnectionStatus.Connected)
-            client.RPC(Player.ChangeAppearance, DisplayName.Text, ColorPreview.Modulate);
+            client.LocalPlayer.RpcId(1, nameof(Player.ChangeAppearance),
+                                     DisplayName.Text, ColorPreview.Modulate);
     }
 }

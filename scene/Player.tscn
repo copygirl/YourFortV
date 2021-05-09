@@ -38,8 +38,5 @@ __meta__ = {
 z_index = -5
 texture = ExtResource( 2 )
 
-[node name="Camera" type="Camera2D" parent="."]
-pause_mode = 2
-
 [node name="CreativeBuilding" type="Node2D" parent="."]
 script = ExtResource( 4 )

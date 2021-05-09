@@ -13,8 +13,10 @@ public class CreativeBuilding : Node2D
 
     [Export] public int MaxLength { get; set; } = 6;
 
-    private Player _player;
     private Texture _blockTex;
+
+    public Cursor Cursor { get; private set; }
+    public Player Player { get; private set; }
 
     private BlockPos _startPos;
     private Facing _direction;
@@ -25,17 +27,18 @@ public class CreativeBuilding : Node2D
 
     public override void _Ready()
     {
-        _player   = GetParent<Player>();
         _blockTex = GD.Load<Texture>("res://gfx/block.png");
+
+        Cursor = this.GetClient()?.Cursor;
+        Player = GetParent<Player>();
     }
 
-    public override void _PhysicsProcess(float delta)
+    public override void _Process(float delta)
     {
-        if (!_player.IsLocal) return;
-        var client = this.GetClient();
+        if (!(Player is LocalPlayer)) return;
         Update(); // Make sure _Draw is being called.
 
-        if (EscapeMenu.Instance.Visible || !client.Cursor.Visible)
+        if (EscapeMenu.Instance.Visible || !Cursor.Visible)
             { _currentMode = null; return; }
 
         switch (_currentMode) {
@@ -48,14 +51,14 @@ public class CreativeBuilding : Node2D
             case BuildMode.Placing:
                 if (Input.IsActionJustPressed("interact_break")) _currentMode = null;
                 else if (!Input.IsActionPressed("interact_place")) {
-                    if (_canBuild) this.GetClient()?.RPC(PlaceLine, _startPos, _direction, _length);
+                    if (_canBuild) RpcId(1, nameof(PlaceLine), _startPos.X, _startPos.Y, _direction, _length);
                     _currentMode = null;
                 }
                 break;
             case BuildMode.Breaking:
                 if (Input.IsActionJustPressed("interact_place")) _currentMode = null;
                 else if (!Input.IsActionPressed("interact_break")) {
-                    this.GetClient()?.RPC(BreakLine, _startPos, _direction, _length);
+                    RpcId(1, nameof(BreakLine), _startPos.X, _startPos.Y, _direction, _length);
                     _currentMode = null;
                 }
                 break;
@@ -63,28 +66,30 @@ public class CreativeBuilding : Node2D
 
         if (_currentMode != null) {
             var start  = _startPos.ToVector();
-            var angle  = client.Cursor.Position.AngleToPoint(start); // angle_to_point appears reversed.
+            var angle  = Cursor.Position.AngleToPoint(start); // angle_to_point appears reversed.
             _direction = Facings.FromAngle(angle);
-            _length    = Math.Min(MaxLength, Mathf.RoundToInt(start.DistanceTo(client.Cursor.Position) / 16));
+            _length    = Math.Min(MaxLength, Mathf.RoundToInt(start.DistanceTo(Cursor.Position) / 16));
         } else {
-            _startPos = BlockPos.FromVector(client.Cursor.Position);
+            _startPos = BlockPos.FromVector(Cursor.Position);
             _length   = 0;
         }
 
-        bool IsBlockAt(BlockPos pos) => client.GetBlockAt(pos) != null;
+        var world = this.GetWorld();
+        bool IsBlockAt(BlockPos pos) => world.GetBlockAt(pos) != null;
         _canBuild = !IsBlockAt(_startPos) && Facings.All.Any(pos => IsBlockAt(_startPos + pos.ToBlockPos()));
     }
 
     public override void _Draw()
     {
-        if (!(this.GetGame() is Client client) || !client.Cursor.Visible || EscapeMenu.Instance.Visible) return;
+        if ((this.GetGame() is Server) || !Cursor.Visible || EscapeMenu.Instance.Visible) return;
 
         var green = Color.FromHsv(1.0F / 3, 1.0F, 1.0F, 0.4F);
         var red   = Color.FromHsv(0.0F, 1.0F, 1.0F, 0.4F);
         var black = new Color(0.0F, 0.0F, 0.0F, 0.65F);
 
+        var world = this.GetWorld();
         foreach (var pos in GetBlockPositions(_startPos, _direction, _length)) {
-            var hasBlock = client.GetBlockAt(pos) != null;
+            var hasBlock = world.GetBlockAt(pos) != null;
             var color    = (_currentMode != BuildMode.Breaking)
                 ? ((_canBuild && !hasBlock) ? green : red)
                 : (hasBlock ? black : red);
@@ -96,33 +101,36 @@ public class CreativeBuilding : Node2D
         => Enumerable.Range(0, length + 1).Select(i => start + direction.ToBlockPos() * i);
 
 
-    [RPC(PacketDirection.ClientToServer)]
-    private static void PlaceLine(Server server, NetworkID networkID, BlockPos start, Facing direction, int length)
+    [Master]
+    private void PlaceLine(int x, int y, Facing direction, int length)
     {
-        var player = server.GetPlayer(networkID);
+        if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+
         // TODO: Test if starting block is valid.
-
         // FIXME: Test if there is a player in the way.
-        var validLocations = GetBlockPositions(start, direction, length)
-            .Where(pos => server.GetBlockAt(pos) == null)
-            .ToArray();
 
-        foreach (var pos in validLocations) {
-            var block = server.Spawn<Block>();
-            block.Position = pos;
-            block.Color    = player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
+        var start = new BlockPos(x, y);
+        var world = this.GetWorld();
+        foreach (var pos in GetBlockPositions(start, direction, length)) {
+            if (world.GetBlockAt(pos) != null) continue;
+            var color = Player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
+            world.Rpc(nameof(World.SpawnBlock), pos.X, pos.Y, color, false);
         }
     }
 
-    [RPC(PacketDirection.ClientToServer)]
-    private static void BreakLine(Server server, NetworkID networkID, BlockPos start, Facing direction, int length)
+    [Master]
+    private void BreakLine(int x, int y, Facing direction, int length)
     {
-        // var player = server.GetPlayer(networkID);
+        if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+
         // TODO: Do additional verification on the packet.
+
+        var start = new BlockPos(x, y);
+        var world = this.GetWorld();
         foreach (var pos in GetBlockPositions(start, direction, length)) {
-            var block = server.GetBlockAt(pos);
+            var block = world.GetBlockAt(pos);
             if (block?.Unbreakable != false) continue;
-            block.RemoveFromParent();
+            world.Rpc(nameof(World.Despawn), world.GetPathTo(block));
         }
     }
 }
