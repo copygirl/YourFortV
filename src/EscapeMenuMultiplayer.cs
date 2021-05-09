@@ -141,7 +141,8 @@ public class EscapeMenuMultiplayer : Container
             IntegratedServer = null;
 
             client.Disconnect();
-            this.GetWorld().Clear();
+            this.GetWorld().ClearPlayers();
+            this.GetWorld().ClearBlocks();
         }
 
         if (client.Status == ConnectionStatus.Disconnected) {
@@ -155,8 +156,8 @@ public class EscapeMenuMultiplayer : Container
             }
             client.Connect(address, port);
         } else {
-            client.Disconnect();
-            this.GetWorld().Clear();
+            this.GetWorld().ClearPlayers();
+            this.GetWorld().ClearBlocks();
         }
     }
 }

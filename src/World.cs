@@ -28,22 +28,15 @@ public class World : Node
         => PlayerContainer.GetChildren().Cast<Player>();
     public Player GetPlayer(int networkID)
         => PlayerContainer.GetNode<Player>(networkID.ToString());
+    public void ClearPlayers()
+        { foreach (var player in Players) player.RemoveFromParent(); }
 
+    public IEnumerable<Block> Blocks
+        => BlockContainer.GetChildren().Cast<Block>();
     public Block GetBlockAt(BlockPos position)
         => BlockContainer.GetNodeOrNull<Block>(position.ToString());
-
-
-    public void Clear()
-    {
-        foreach (var player in Players) {
-            BlockContainer.RemoveChild(player);
-            player.QueueFree();
-        }
-        foreach (var node in BlockContainer.GetChildren().Cast<Node>()) {
-            BlockContainer.RemoveChild(node);
-            node.QueueFree();
-        }
-    }
+    [PuppetSync] public void ClearBlocks()
+        { foreach (var block in Blocks) block.RemoveFromParent(); }
 
 
     [PuppetSync]

@@ -18,6 +18,12 @@ public static class Extensions
         => node.GetGame() as Server;
     public static World GetWorld(this Node node)
         => node.GetGame().GetNode<World>("World");
+
+    public static void RemoveFromParent(this Node node)
+    {
+        node.GetParent().RemoveChild(node);
+        node.QueueFree();
+    }
 }
 
 public interface IInitializable
