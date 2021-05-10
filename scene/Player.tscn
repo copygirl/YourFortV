@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://ui_theme.tres" type="Theme" id=1]
 [ext_resource path="res://gfx/player.png" type="Texture" id=2]
 [ext_resource path="res://src/Objects/Player.cs" type="Script" id=3]
 [ext_resource path="res://src/CreativeBuilding.cs" type="Script" id=4]
+[ext_resource path="res://gfx/block.png" type="Texture" id=6]
 
 [sub_resource type="CircleShape2D" id=1]
 radius = 8.0
@@ -38,5 +39,12 @@ __meta__ = {
 z_index = -5
 texture = ExtResource( 2 )
 
-[node name="CreativeBuilding" type="Node2D" parent="."]
+[node name="Items" type="Node2D" parent="."]
+
+[node name="Creative Building" type="Node2D" parent="Items"]
+visible = false
 script = ExtResource( 4 )
+
+[node name="Icon" type="Sprite" parent="Items/Creative Building"]
+visible = false
+texture = ExtResource( 6 )

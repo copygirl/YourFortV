@@ -19,8 +19,6 @@ public class EscapeMenuMultiplayer : Container
     public Button ClientDisConnect { get; private set; }
     public LineEdit ClientAddress { get; private set; }
 
-    public IntegratedServer IntegratedServer { get; private set; }
-
     public override void _Ready()
     {
         Status           = GetNode<Label>(StatusPath);
@@ -33,22 +31,11 @@ public class EscapeMenuMultiplayer : Container
         ClientAddress.PlaceholderText = $"localhost:{DEFAULT_PORT}";
 
         this.GetClient().StatusChanged += OnStatusChanged;
-        CallDeferred(nameof(SetupIntegratedServer));
-    }
-    private void SetupIntegratedServer()
-    {
-        IntegratedServer = new IntegratedServer();
-        this.GetClient().AddChild(IntegratedServer);
-        CallDeferred(nameof(StartIntegratedServerAndConnect));
-    }
-    private void StartIntegratedServerAndConnect()
-    {
-        var port = IntegratedServer.Server.StartSingleplayer();
-        this.GetClient().Connect("127.0.0.1", port);
     }
 
     private void OnStatusChanged(ConnectionStatus status)
     {
+        var server = this.GetClient().IntegratedServer.Server;
         switch (status) {
             case ConnectionStatus.Disconnected:
                 Status.Text     = "Disconnected";
@@ -59,10 +46,10 @@ public class EscapeMenuMultiplayer : Container
                 Status.Modulate = Colors.Yellow;
                 break;
             case ConnectionStatus.Connected:
-                if (IntegratedServer == null) {
+                if (!server.IsRunning) {
                     Status.Text     = "Connected!";
                     Status.Modulate = Colors.Green;
-                } else if (IntegratedServer.Server.IsSingleplayer) {
+                } else if (server.IsSingleplayer) {
                     Status.Text     = "Singleplayer";
                     Status.Modulate = Colors.White;
                 } else {
@@ -72,15 +59,16 @@ public class EscapeMenuMultiplayer : Container
                 break;
         }
 
-        ServerPort.Editable      = IntegratedServer != null;
-        ServerOpenClose.Disabled = IntegratedServer == null;
-        ServerOpenClose.Text     = (IntegratedServer?.Server.IsSingleplayer == false) ? "Close Server" : "Open Server";
-        ClientDisConnect.Text = ((IntegratedServer != null) || (status == ConnectionStatus.Disconnected)) ? "Connect" : "Disconnect";
 
-        var isSingleplayer = IntegratedServer?.Server.IsSingleplayer == true;
-        var pauseMode      = isSingleplayer ? PauseModeEnum.Stop : PauseModeEnum.Process;
-        this.GetWorld().PauseMode = pauseMode;
-        if (IntegratedServer != null) IntegratedServer.Server.GetWorld().PauseMode = pauseMode;
+        ServerPort.Editable      =  server.IsRunning;
+        ServerOpenClose.Disabled = !server.IsRunning;
+        ServerOpenClose.Text     = (server.IsRunning && !server.IsSingleplayer) ? "Close Server" : "Open Server";
+        ClientDisConnect.Text     = (server.IsSingleplayer || (status == ConnectionStatus.Disconnected)) ? "Connect" : "Disconnect";
+        ClientDisConnect.Disabled = server.IsRunning && !server.IsSingleplayer;
+
+        var pauseMode = server.IsSingleplayer ? PauseModeEnum.Stop : PauseModeEnum.Process;
+        this.GetWorld().PauseMode   = pauseMode;
+        server.GetWorld().PauseMode = pauseMode;
 
         // TODO: Allow starting up the integrated server again when disconnected.
     }
@@ -107,8 +95,8 @@ public class EscapeMenuMultiplayer : Container
 
     private void _on_ServerOpenClose_pressed()
     {
-        var server = IntegratedServer?.Server;
         var client = this.GetClient();
+        var server = client.IntegratedServer.Server;
         if (server?.IsRunning != true) throw new InvalidOperationException();
 
         if (server.IsSingleplayer) {
@@ -133,12 +121,12 @@ public class EscapeMenuMultiplayer : Container
     private void _on_ClientDisConnect_pressed()
     {
         var client = this.GetClient();
+        var server = client.IntegratedServer.Server;
 
-        if (IntegratedServer != null) {
-            IntegratedServer.Server.Stop();
-            client.RemoveChild(IntegratedServer);
-            IntegratedServer.QueueFree();
-            IntegratedServer = null;
+        if (server.IsRunning) {
+            server.Stop();
+            server.GetWorld().ClearPlayers();
+            server.GetWorld().ClearBlocks();
 
             client.Disconnect();
             this.GetWorld().ClearPlayers();
@@ -156,6 +144,7 @@ public class EscapeMenuMultiplayer : Container
             }
             client.Connect(address, port);
         } else {
+            client.Disconnect();
             this.GetWorld().ClearPlayers();
             this.GetWorld().ClearBlocks();
         }

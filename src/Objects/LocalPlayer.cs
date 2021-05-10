@@ -15,6 +15,7 @@ public class LocalPlayer : Player
     public float GroundFriction { get; set; } = 0.2F;
     public float AirFriction { get; set; } = 0.05F;
 
+
     public Vector2 Velocity = Vector2.Zero;
     private DateTime? _jumpPressed = null;
     private DateTime? _lastOnFloor = null;

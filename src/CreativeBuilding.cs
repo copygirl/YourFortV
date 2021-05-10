@@ -30,38 +30,43 @@ public class CreativeBuilding : Node2D
         _blockTex = GD.Load<Texture>("res://gfx/block.png");
 
         Cursor = this.GetClient()?.Cursor;
-        Player = GetParent<Player>();
+        Player = GetParent().GetParent<Player>();
+    }
+
+    public override void _UnhandledInput(InputEvent ev)
+    {
+        if (!(Player is LocalPlayer) || !Visible) return;
+
+        if (ev.IsActionPressed("interact_place")) {
+            GetTree().SetInputAsHandled();
+            _currentMode = (((_currentMode == null) && _canBuild) ? BuildMode.Placing : (BuildMode?)null);
+        }
+        if (ev.IsActionPressed("interact_break")) {
+            GetTree().SetInputAsHandled();
+            _currentMode = ((_currentMode == null) ? BuildMode.Breaking : (BuildMode?)null);
+        }
+        // NOTE: These ternary operations require extra brackets for some
+        //       reason or else the syntax highlighting in VS Code breaks?!
     }
 
     public override void _Process(float delta)
     {
         if (!(Player is LocalPlayer)) return;
-        Update(); // Make sure _Draw is being called.
+        if (!Visible) _currentMode = null;
 
-        if (EscapeMenu.Instance.Visible || !Cursor.Visible)
-            { _currentMode = null; return; }
+        if (_currentMode == BuildMode.Placing) {
+            if (!_canBuild) _currentMode = null;
+            else if (!Input.IsActionPressed("interact_place")) {
+                RpcId(1, nameof(PlaceLine), _startPos.X, _startPos.Y, _direction, _length);
+                _currentMode = null;
+            }
+        }
 
-        switch (_currentMode) {
-            case null:
-                if (Input.IsActionJustPressed("interact_place"))
-                    if (_canBuild) _currentMode = BuildMode.Placing;
-                if (Input.IsActionJustPressed("interact_break"))
-                    _currentMode = BuildMode.Breaking;
-                break;
-            case BuildMode.Placing:
-                if (Input.IsActionJustPressed("interact_break")) _currentMode = null;
-                else if (!Input.IsActionPressed("interact_place")) {
-                    if (_canBuild) RpcId(1, nameof(PlaceLine), _startPos.X, _startPos.Y, _direction, _length);
-                    _currentMode = null;
-                }
-                break;
-            case BuildMode.Breaking:
-                if (Input.IsActionJustPressed("interact_place")) _currentMode = null;
-                else if (!Input.IsActionPressed("interact_break")) {
-                    RpcId(1, nameof(BreakLine), _startPos.X, _startPos.Y, _direction, _length);
-                    _currentMode = null;
-                }
-                break;
+        if (_currentMode == BuildMode.Breaking) {
+            if (!Input.IsActionPressed("interact_break")) {
+                RpcId(1, nameof(BreakLine), _startPos.X, _startPos.Y, _direction, _length);
+                _currentMode = null;
+            }
         }
 
         if (_currentMode != null) {
@@ -77,11 +82,13 @@ public class CreativeBuilding : Node2D
         var world = this.GetWorld();
         bool IsBlockAt(BlockPos pos) => world.GetBlockAt(pos) != null;
         _canBuild = !IsBlockAt(_startPos) && Facings.All.Any(pos => IsBlockAt(_startPos + pos.ToBlockPos()));
+
+        Update(); // Make sure _Draw is being called.
     }
 
     public override void _Draw()
     {
-        if ((this.GetGame() is Server) || !Cursor.Visible || EscapeMenu.Instance.Visible) return;
+        if (!Cursor.Visible || EscapeMenu.Instance.Visible) return;
 
         var green = Color.FromHsv(1.0F / 3, 1.0F, 1.0F, 0.4F);
         var red   = Color.FromHsv(0.0F, 1.0F, 1.0F, 0.4F);

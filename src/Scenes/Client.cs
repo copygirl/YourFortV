@@ -4,7 +4,10 @@ using static Godot.NetworkedMultiplayerPeer;
 
 public class Client : Game
 {
+    [Export] public NodePath IntegratedServerPath { get; set; }
     [Export] public NodePath CursorPath { get; set; }
+
+    public IntegratedServer IntegratedServer { get; private set; }
     public Cursor Cursor { get; private set; }
 
     public NetworkedMultiplayerENet Peer => (NetworkedMultiplayerENet)Multiplayer.NetworkPeer;
@@ -19,7 +22,8 @@ public class Client : Game
     public override void _Ready()
     {
         base._Ready();
-        Cursor = GetNode<Cursor>(CursorPath);
+        Cursor           = GetNode<Cursor>(CursorPath);
+        IntegratedServer = GetNode<IntegratedServer>(IntegratedServerPath);
 
         Multiplayer.Connect("connected_to_server", this, nameof(OnConnectedToServer));
         Multiplayer.Connect("connection_failed", this, nameof(Disconnect));

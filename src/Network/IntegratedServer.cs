@@ -5,9 +5,6 @@ public class IntegratedServer : Node
     private SceneTree _sceneTree;
     public Server Server { get; private set; }
 
-    public IntegratedServer()
-        => Name = "IntegratedServer";
-
     public override void _Ready()
     {
         _sceneTree = new SceneTree();
@@ -26,6 +23,9 @@ public class IntegratedServer : Node
             var color = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
             world.SpawnBlock(x, 3, color, true);
         }
+
+        var port = Server.StartSingleplayer();
+        this.GetClient().Connect("127.0.0.1", port);
     }
 
     public override void _Process(float delta) => _sceneTree.Idle(delta);

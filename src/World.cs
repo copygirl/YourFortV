@@ -27,7 +27,7 @@ public class World : Node
     public IEnumerable<Player> Players
         => PlayerContainer.GetChildren().Cast<Player>();
     public Player GetPlayer(int networkID)
-        => PlayerContainer.GetNode<Player>(networkID.ToString());
+        => PlayerContainer.GetNodeOrNull<Player>(networkID.ToString());
     public void ClearPlayers()
         { foreach (var player in Players) player.RemoveFromParent(); }
 

@@ -2,6 +2,8 @@ using Godot;
 
 public class Cursor : Node2D
 {
+    public Vector2 ScreenPosition { get; private set; }
+
     public override void _Ready()
     {
         Input.SetMouseMode(Input.MouseMode.Hidden);
@@ -19,6 +21,7 @@ public class Cursor : Node2D
 
     public override void _Process(float delta)
     {
-        Position = GetGlobalMousePosition() - GetViewport().CanvasTransform.origin;
+        ScreenPosition = GetGlobalMousePosition();
+        Position       = ScreenPosition - GetViewport().CanvasTransform.origin;
     }
 }

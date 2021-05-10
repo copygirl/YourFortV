@@ -24,6 +24,9 @@ public class Player : KinematicBody2D, IInitializable
         RsetConfig(nameof(Color), MultiplayerAPI.RPCMode.Puppetsync);
     }
 
+    public override void _Ready()
+        => Visible = this.GetGame() is Client;
+
     public override void _Process(float delta)
     {
         if ((Position.y > 9000) && (this.GetGame() is Server))

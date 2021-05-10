@@ -15,9 +15,7 @@ public class EscapeMenu : Control
     }
 
     public override void _UnhandledInput(InputEvent @event)
-    {
-        if (@event.IsActionPressed("ui_menu")) Toggle();
-    }
+        { if (@event.IsActionPressed("ui_menu")) Toggle(); }
 
 
     public void Toggle()
