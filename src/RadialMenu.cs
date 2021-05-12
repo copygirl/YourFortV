@@ -12,8 +12,7 @@ public class RadialMenu : Node2D
     public Label ActiveName { get; private set; }
 
     private float _startAngle;
-    public Node2D Selected { get; private set; } = null;
-    public int? SelectedIndex => (Selected != null) ? Selected.GetIndex() : (int?)null;
+    private Node2D _selected;
 
     public override void _Ready()
     {
@@ -23,36 +22,20 @@ public class RadialMenu : Node2D
         ActiveName = GetNode<Label>("ActiveName");
     }
 
-    public Node GetItems()
-        => this.GetClient().LocalPlayer?.GetNode<Node2D>("Items");
-
-    public void Select(Node2D node)
-    {
-        if (node == Selected) return;
-        if ((node != null) && (node.GetParent() != GetItems())) throw new ArgumentException();
-
-        ActiveName.Text = node?.Name ?? "";
-        if (Visible)
-            Update();
-        else {
-            SetActive(Selected, false);
-            SetActive(node, true);
-        }
-        Selected = node;
-    }
-    private static void SetActive(Node2D node, bool value) {
-        if (node == null) return;
-        node.SetProcessInput(value);
-        node.SetProcessUnhandledInput(value);
-        node.Visible = value;
-    }
+    public IItems GetItems()
+        => this.GetClient().LocalPlayer?.GetNode<IItems>("Items");
 
     public override void _UnhandledInput(InputEvent ev)
     {
         if (ev.IsActionPressed("interact_select")) {
             Position = this.GetClient().Cursor.ScreenPosition.Round();
             Visible = true;
-            SetActive(Selected, false);
+
+            var items = GetItems();
+            _selected = items.Current;
+            items.Current = null;
+
+            ActiveName.Text = _selected?.Name ?? "";
             Update();
         }
         // TODO: Add scrollwheel support.
@@ -61,54 +44,62 @@ public class RadialMenu : Node2D
     public override void _Process(float delta)
     {
         if (!Visible) return;
+        var items = GetItems();
 
         var cursorPos = ToLocal(this.GetClient().Cursor.ScreenPosition);
         var angle = cursorPos.Angle() - _startAngle;
         var index = (int)((angle / Mathf.Tau + 1) % 1 * MinElements);
-        var items = GetItems();
-        if ((cursorPos.Length() > InnerRadius) && (index < items.GetChildCount()))
-            Select(items.GetChild<Node2D>(index));
+        if ((cursorPos.Length() > InnerRadius) && (index < items.Count) && (items[index] != _selected)) {
+            _selected = items[index];
+            ActiveName.Text = _selected?.Name ?? "";
+            Update();
+        }
 
         if (!Input.IsActionPressed("interact_select")) {
             Visible = false;
-            SetActive(Selected, true);
+            items.Current = _selected;
             Update();
         }
     }
 
     public override void _Draw()
     {
+        var items = GetItems();
+
         var vertices = new Vector2[5];
         var colors   = new Color[5];
 
-        for (var i = 0; i < MinElements; i++) {
-            var angle1 = _startAngle + Mathf.Tau * ( i      / (float)MinElements);
-            var angle3 = _startAngle + Mathf.Tau * ((i + 1) / (float)MinElements);
+        var numElements = Math.Max(MinElements, items.Count);
+        for (var i = 0; i < numElements; i++) {
+            var angle1 = _startAngle + Mathf.Tau * ( i      / (float)numElements);
+            var angle3 = _startAngle + Mathf.Tau * ((i + 1) / (float)numElements);
             var angle2 = (angle1 + angle3) / 2;
 
-            var sep1 = new Vector2(Mathf.Cos(angle1 + Mathf.Tau / 4), Mathf.Sin(angle1 + Mathf.Tau / 4)) * Separation;
-            var sep2 = new Vector2(Mathf.Cos(angle3 - Mathf.Tau / 4), Mathf.Sin(angle3 - Mathf.Tau / 4)) * Separation;
+            var sep1 = Mathf.Polar2Cartesian(Separation, angle1 + Mathf.Tau / 4);
+            var sep2 = Mathf.Polar2Cartesian(Separation, angle3 - Mathf.Tau / 4);
 
-            var isSelected  = i == SelectedIndex;
+            var isSelected  = (i < items.Count) && (_selected == items[i]);
             var innerRadius = InnerRadius + (isSelected ? 5 : 0);
             var outerRadius = OuterRadius + (isSelected ? 5 : 0);
 
-            vertices[0] = new Vector2(Mathf.Cos(angle1), Mathf.Sin(angle1)) * innerRadius + sep1;
-            vertices[1] = new Vector2(Mathf.Cos(angle1), Mathf.Sin(angle1)) * outerRadius + sep1;
-            vertices[2] = new Vector2(Mathf.Cos(angle2), Mathf.Sin(angle2)) * (outerRadius + Separation);
-            vertices[3] = new Vector2(Mathf.Cos(angle3), Mathf.Sin(angle3)) * outerRadius + sep2;
-            vertices[4] = new Vector2(Mathf.Cos(angle3), Mathf.Sin(angle3)) * innerRadius + sep2;
+            vertices[0] = Mathf.Polar2Cartesian(innerRadius             , angle1) + sep1;
+            vertices[1] = Mathf.Polar2Cartesian(outerRadius             , angle1) + sep1;
+            vertices[2] = Mathf.Polar2Cartesian(outerRadius + Separation, angle2);
+            vertices[3] = Mathf.Polar2Cartesian(outerRadius             , angle3) + sep2;
+            vertices[4] = Mathf.Polar2Cartesian(innerRadius             , angle3) + sep2;
 
             var color = new Color(0.1F, 0.1F, 0.1F, isSelected ? 0.7F : 0.4F);
             for (var j = 0; j < colors.Length; j++) colors[j] = color;
 
             DrawPolygon(vertices, colors, antialiased: true);
 
-            var items = GetItems();
-            if ((i < items.GetChildCount()) && (items.GetChild(i)?.GetNodeOrNull("Icon") is Sprite sprite)) {
-                var pos = new Vector2(Mathf.Cos(angle2), Mathf.Sin(angle2)) * (innerRadius + outerRadius) / 2;
-                if (sprite.Centered) pos -= sprite.Texture.GetSize() / 2;
-                DrawTexture(sprite.Texture, sprite.Offset + pos, sprite.Modulate);
+            if (i < items.Count) {
+                var sprite = (items[i].GetNodeOrNull("Icon") as Sprite) ?? (items[i] as Sprite);
+                if (sprite != null) {
+                    var pos = Mathf.Polar2Cartesian((innerRadius + outerRadius) / 2, angle2);
+                    if (sprite.Centered) pos -= sprite.Texture.GetSize() / 2;
+                    DrawTexture(sprite.Texture, pos, sprite.Modulate);
+                }
             }
         }
     }

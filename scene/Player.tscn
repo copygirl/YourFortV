@@ -1,10 +1,21 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=18 format=2]
 
 [ext_resource path="res://ui_theme.tres" type="Theme" id=1]
 [ext_resource path="res://gfx/player.png" type="Texture" id=2]
 [ext_resource path="res://src/Objects/Player.cs" type="Script" id=3]
-[ext_resource path="res://src/CreativeBuilding.cs" type="Script" id=4]
+[ext_resource path="res://src/Items/CreativeBuilding.cs" type="Script" id=4]
+[ext_resource path="res://src/Items/Items.cs" type="Script" id=5]
 [ext_resource path="res://gfx/block.png" type="Texture" id=6]
+[ext_resource path="res://gfx/guns/ColtSingleActionArmy.png" type="Texture" id=7]
+[ext_resource path="res://src/Items/Weapon.cs" type="Script" id=8]
+[ext_resource path="res://gfx/guns/DoubleBarrel.png" type="Texture" id=9]
+[ext_resource path="res://gfx/guns/SuperSoaker.png" type="Texture" id=10]
+[ext_resource path="res://gfx/guns/M1Garand.png" type="Texture" id=11]
+[ext_resource path="res://gfx/guns/FNScar.png" type="Texture" id=12]
+[ext_resource path="res://sfx/shotgun.wav" type="AudioStream" id=13]
+[ext_resource path="res://sfx/revolver.wav" type="AudioStream" id=14]
+[ext_resource path="res://sfx/rifle.wav" type="AudioStream" id=15]
+[ext_resource path="res://sfx/assault_rifle.wav" type="AudioStream" id=16]
 
 [sub_resource type="CircleShape2D" id=1]
 radius = 8.0
@@ -40,6 +51,8 @@ z_index = -5
 texture = ExtResource( 2 )
 
 [node name="Items" type="Node2D" parent="."]
+script = ExtResource( 5 )
+DefaultItemPath = NodePath("Creative Building")
 
 [node name="Creative Building" type="Node2D" parent="Items"]
 visible = false
@@ -48,3 +61,89 @@ script = ExtResource( 4 )
 [node name="Icon" type="Sprite" parent="Items/Creative Building"]
 visible = false
 texture = ExtResource( 6 )
+
+[node name="Revolver" type="Sprite" parent="Items"]
+visible = false
+texture = ExtResource( 7 )
+offset = Vector2( 8, 0 )
+script = ExtResource( 8 )
+Spread = 3.0
+SpreadIncrease = 1.0
+RecoilMin = 3.0
+RecoilMax = 5.0
+RecoilRegen = 16.0
+
+[node name="Tip" type="Node2D" parent="Items/Revolver"]
+position = Vector2( 15, -2.5 )
+
+[node name="Fire" type="AudioStreamPlayer2D" parent="Items/Revolver"]
+stream = ExtResource( 14 )
+attenuation = 1.0
+
+[node name="Shotgun" type="Sprite" parent="Items"]
+visible = false
+texture = ExtResource( 9 )
+offset = Vector2( 8, 0 )
+script = ExtResource( 8 )
+EffectiveRange = 240
+MaximumRange = 360
+Spread = 14.0
+SpreadIncrease = 20.0
+SpreadRegen = 16.0
+RecoilMin = 6.0
+RecoilMax = 12.0
+RecoilRegen = 8.0
+
+[node name="Tip" type="Node2D" parent="Items/Shotgun"]
+position = Vector2( 22, -1.5 )
+
+[node name="Fire" type="AudioStreamPlayer2D" parent="Items/Shotgun"]
+stream = ExtResource( 13 )
+attenuation = 1.0
+
+[node name="Rifle" type="Sprite" parent="Items"]
+visible = false
+texture = ExtResource( 11 )
+offset = Vector2( 8, 0 )
+script = ExtResource( 8 )
+EffectiveRange = 480
+MaximumRange = 920
+SpreadIncrease = 2.0
+SpreadRegen = 2.0
+RecoilMin = 8.0
+RecoilMax = 8.0
+RecoilRegen = 8.0
+
+[node name="Tip" type="Node2D" parent="Items/Rifle"]
+position = Vector2( 24, -1.5 )
+
+[node name="Fire" type="AudioStreamPlayer2D" parent="Items/Rifle"]
+stream = ExtResource( 15 )
+attenuation = 1.0
+
+[node name="Assault Rifle" type="Sprite" parent="Items"]
+visible = false
+texture = ExtResource( 12 )
+offset = Vector2( 8, 0 )
+script = ExtResource( 8 )
+Spread = 1.0
+SpreadIncrease = 1.2
+SpreadRegen = 5.0
+RecoilMin = 1.0
+RecoilMax = 2.5
+
+[node name="Tip" type="Node2D" parent="Items/Assault Rifle"]
+position = Vector2( 22, -1.5 )
+
+[node name="Fire" type="AudioStreamPlayer2D" parent="Items/Assault Rifle"]
+stream = ExtResource( 16 )
+attenuation = 1.0
+
+[node name="Super Soaker" type="Sprite" parent="Items"]
+visible = false
+texture = ExtResource( 10 )
+offset = Vector2( 8, 0 )
+script = ExtResource( 8 )
+
+[node name="Tip" type="Node2D" parent="Items/Super Soaker"]
+position = Vector2( 17, 0.5 )

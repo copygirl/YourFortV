@@ -35,7 +35,7 @@ public class CreativeBuilding : Node2D
 
     public override void _UnhandledInput(InputEvent ev)
     {
-        if (!(Player is LocalPlayer) || !Visible) return;
+        if (!Visible || !(Player is LocalPlayer)) return;
 
         if (ev.IsActionPressed("interact_place")) {
             GetTree().SetInputAsHandled();
