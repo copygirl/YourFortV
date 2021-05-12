@@ -61,8 +61,8 @@ public class EscapeMenuWorld : CenterContainer
 
     private void OnStatusChanged(ConnectionStatus status)
     {
-        var server = this.GetClient().GetNodeOrNull<IntegratedServer>(nameof(IntegratedServer));
-        GetParent<TabContainer>().SetTabDisabled(GetIndex(), server == null);
+        var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer));
+        GetParent<TabContainer>().SetTabDisabled(GetIndex(), !server.Server.IsRunning);
     }
 
 
