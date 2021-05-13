@@ -1,6 +1,7 @@
 using System;
 using Godot;
 
+// TODO: Display number of rounds for weapons? Add an even smaller font for this?
 public class RadialMenu : Node2D
 {
     [Export] public int InnerRadius { get; set; } = 32;
@@ -28,6 +29,8 @@ public class RadialMenu : Node2D
 
     public override void _UnhandledInput(InputEvent ev)
     {
+        if (GetItems() == null) return;
+
         if (ev.IsActionPressed("interact_select")) {
             Position = this.GetClient().Cursor.ScreenPosition.Round();
             Visible  = true;
@@ -41,6 +44,7 @@ public class RadialMenu : Node2D
             ActiveName.Text = _selected?.Name ?? "";
             Update();
         }
+
         if (ev.IsActionPressed("interact_select_dec") || ev.IsActionPressed("interact_select_inc")) {
             var diff  = ev.IsActionPressed("interact_select_inc") ? 1 : -1;
             var items = GetItems();
@@ -87,7 +91,9 @@ public class RadialMenu : Node2D
             return;
         }
 
-        var items  = GetItems();
+        var items = GetItems();
+        if (items == null) return;
+
         var cursor = ToLocal(this.GetClient().Cursor.ScreenPosition);
         var angle  = cursor.Angle() - _startAngle;
         var index  = (int)((angle / Mathf.Tau + 1) % 1 * MinElements);

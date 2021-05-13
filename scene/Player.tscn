@@ -67,12 +67,15 @@ visible = false
 texture = ExtResource( 7 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
+RateOfFire = 400
+Capacity = 6
+ReloadTime = 1.4
 Knockback = 50.0
 Spread = 1.5
 SpreadIncrease = 1.0
 RecoilMin = 3.0
 RecoilMax = 5.0
-BulletSpeed = 1200
+BulletVelocity = 1200
 
 [node name="Tip" type="Node2D" parent="Items/Revolver"]
 position = Vector2( 15, -2.5 )
@@ -85,15 +88,17 @@ visible = false
 texture = ExtResource( 9 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
-EffectiveRange = 240
-MaximumRange = 360
+Capacity = 2
+ReloadTime = 2.0
 Knockback = 135.0
 Spread = 8.0
 SpreadIncrease = 10.0
 RecoilMin = 6.0
 RecoilMax = 12.0
-BulletSpeed = 1000
-BulletsPetShot = 8
+EffectiveRange = 240
+MaximumRange = 360
+BulletVelocity = 1000
+BulletsPerShot = 6
 BulletOpacity = 0.1
 
 [node name="Tip" type="Node2D" parent="Items/Shotgun"]
@@ -107,13 +112,15 @@ visible = false
 texture = ExtResource( 11 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
-EffectiveRange = 480
-MaximumRange = 920
+Capacity = 1
+ReloadTime = 1.6
 Knockback = 100.0
 SpreadIncrease = 2.0
 RecoilMin = 8.0
 RecoilMax = 8.0
-BulletSpeed = 4000
+EffectiveRange = 480
+MaximumRange = 920
+BulletVelocity = 4000
 BulletOpacity = 0.4
 
 [node name="Tip" type="Node2D" parent="Items/Rifle"]
@@ -127,11 +134,16 @@ visible = false
 texture = ExtResource( 12 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
+Automatic = true
+RateOfFire = 600
+Capacity = 30
+ReloadTime = 2.4
 Knockback = 30.0
 Spread = 0.6
 SpreadIncrease = 0.8
 RecoilMin = 1.0
 RecoilMax = 2.5
+BulletOpacity = 0.15
 
 [node name="Tip" type="Node2D" parent="Items/Assault Rifle"]
 position = Vector2( 22, -1.5 )
@@ -144,6 +156,7 @@ visible = false
 texture = ExtResource( 10 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
+Automatic = true
 
 [node name="Tip" type="Node2D" parent="Items/Super Soaker"]
 position = Vector2( 17, 0.5 )

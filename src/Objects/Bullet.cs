@@ -8,7 +8,7 @@ public class Bullet : Node2D
     public Vector2 Direction { get; }
     public int EffectiveRange { get; }
     public int MaximumRange { get; }
-    public int Speed { get; }
+    public int Velocity { get; }
     public Color Color { get; }
 
     private readonly Vector2 _startPosition;
@@ -16,14 +16,14 @@ public class Bullet : Node2D
     private float _distance;
 
     public Bullet(Vector2 position, Vector2 direction,
-        int effectiveRange, int maximumRange, int speed, Color color)
+        int effectiveRange, int maximumRange, int velocity, Color color)
     {
         _startPosition = Position = position;
         Direction      = direction;
         EffectiveRange = effectiveRange;
         MaximumRange   = maximumRange;
-        Speed = speed;
-        Color = color;
+        Velocity = velocity;
+        Color    = color;
     }
 
     public override void _Ready()
@@ -42,7 +42,7 @@ public class Bullet : Node2D
     public override void _PhysicsProcess(float delta)
     {
         var previousPosition = Position;
-        _distance = Mathf.Min(MaximumRange, Speed * (float)_age.TotalSeconds);
+        _distance = Mathf.Min(MaximumRange, Velocity * (float)_age.TotalSeconds);
         Position  = _startPosition + Direction * _distance;
 
         var collision = GetWorld2d().DirectSpaceState.IntersectRay(

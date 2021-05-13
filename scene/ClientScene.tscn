@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=2]
+[gd_scene load_steps=16 format=2]
 
 [ext_resource path="res://scene/GameScene.tscn" type="PackedScene" id=1]
 [ext_resource path="res://src/Cursor.cs" type="Script" id=2]
@@ -11,6 +11,31 @@
 [ext_resource path="res://src/Network/IntegratedServer.cs" type="Script" id=9]
 [ext_resource path="res://ui_theme.tres" type="Theme" id=10]
 [ext_resource path="res://src/RadialMenu.cs" type="Script" id=11]
+[ext_resource path="res://src/WeaponInfo.cs" type="Script" id=12]
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0, 0, 0, 0.752941 )
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color( 0, 0, 0, 0.501961 )
+corner_detail = 1
+expand_margin_left = 1.0
+expand_margin_right = 1.0
+expand_margin_top = 1.0
+expand_margin_bottom = 1.0
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color( 0, 0.752941, 0, 0.752941 )
+corner_detail = 1
+
+[sub_resource type="Theme" id=3]
+ProgressBar/colors/font_color = Color( 0.94, 0.94, 0.94, 1 )
+ProgressBar/colors/font_color_shadow = Color( 0, 0, 0, 1 )
+ProgressBar/fonts/font = null
+ProgressBar/styles/bg = SubResource( 1 )
+ProgressBar/styles/fg = SubResource( 2 )
 
 [node name="Client" instance=ExtResource( 1 )]
 script = ExtResource( 8 )
@@ -70,3 +95,34 @@ follow_viewport_enable = true
 z_index = 1000
 texture = ExtResource( 3 )
 script = ExtResource( 2 )
+
+[node name="WeaponInfo" type="Node2D" parent="CursorLayer/Cursor" index="0"]
+script = ExtResource( 12 )
+
+[node name="Rounds" type="Label" parent="CursorLayer/Cursor/WeaponInfo" index="0"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -40.0
+margin_top = 7.0
+margin_right = 40.0
+margin_bottom = 16.0
+theme = ExtResource( 10 )
+text = "12/12"
+align = 1
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Reloading" type="ProgressBar" parent="CursorLayer/Cursor/WeaponInfo" index="1"]
+margin_left = -16.0
+margin_top = 10.0
+margin_right = 16.0
+margin_bottom = 13.0
+theme = SubResource( 3 )
+max_value = 1.0
+value = 0.5
+percent_visible = false
+__meta__ = {
+"_edit_use_anchors_": false
+}
