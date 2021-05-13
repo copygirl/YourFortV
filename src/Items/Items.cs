@@ -57,5 +57,8 @@ public class Items : Node2D, IItems
         node.SetProcessInput(value);
         node.SetProcessUnhandledInput(value);
         node.Visible = value;
+        // Call _Process when an item is equipped so it
+        // has a chance to update before it gets drawn.
+        if (value) node._Process(0);
     }
 }

@@ -47,8 +47,6 @@ public class Weapon : Sprite
 
     public override void _Process(float delta)
     {
-        // FIXME: Need to run _Process after switching to a weapon.
-
         _currentSpreadInc = Mathf.Max(0, _currentSpreadInc - Mathf.Deg2Rad(SpreadRegen) * delta);
         _currentRecoil    = Mathf.Max(0, _currentRecoil    - Mathf.Deg2Rad(RecoilRegen) * delta);
 
