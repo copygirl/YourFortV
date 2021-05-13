@@ -13,6 +13,10 @@ public class Weapon : Sprite
     [Export] public float RecoilMin { get; set; } = 0.0F;
     [Export] public float RecoilMax { get; set; } = 0.0F;
 
+    [Export] public int BulletSpeed { get; set; } = 2000;
+    [Export] public int BulletsPetShot { get; set; } = 1;
+    [Export] public float BulletOpacity { get; set; } = 0.2F;
+
 
     public Cursor Cursor { get; private set; }
     public Player Player { get; private set; }
@@ -34,14 +38,45 @@ public class Weapon : Sprite
         if (!(Player is LocalPlayer localPlayer)) return;
 
         if (ev.IsActionPressed("interact_primary")) {
-            GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
-            // TODO: Spawn bullet or something.
-            // TODO: Tell server (and other clients) we shot.
-            _currentSpreadInc += Mathf.Deg2Rad(SpreadIncrease);
-            _currentRecoil    += Mathf.Deg2Rad((float)GD.RandRange(RecoilMin, RecoilMax));
-
+            var seed = unchecked((int)GD.Randi());
+            ShootInternal(AimDirection, Scale.y > 0, seed);
+            RpcId(1, nameof(Shoot), AimDirection, Scale.y > 0, seed);
             localPlayer.Velocity -= Mathf.Polar2Cartesian(Knockback, Rotation);
         }
+    }
+
+    [Remote]
+    private void Shoot(float aimDirection, bool toRight, int seed)
+    {
+        if (this.GetGame() is Server) {
+            if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+            // TODO: Verify input.
+            Rpc(nameof(Shoot), aimDirection, toRight, seed);
+        } else if (Player is LocalPlayer) return;
+        ShootInternal(aimDirection, toRight, seed);
+    }
+    private void ShootInternal(float aimDirection, bool toRight, int seed)
+    {
+        if (this.GetGame() is Client)
+            GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
+
+        var random = new Random(seed);
+        var angle = aimDirection - _currentRecoil * (toRight ? 1 : -1);
+
+        var tip = GetNode<Node2D>("Tip").Position;
+        if (!toRight) tip.y *= -1;
+        tip = tip.Rotated(angle);
+
+        for (var i = 0; i < BulletsPetShot; i++) {
+            var spread = (Mathf.Deg2Rad(Spread) + _currentSpreadInc) * Mathf.Clamp(random.NextGaussian(0.4F), -1, 1);
+            var dir    = Mathf.Polar2Cartesian(1, angle + spread);
+            var color  = new Color(Player.Color, BulletOpacity);
+            var bullet = new Bullet(Player.Position + tip, dir, EffectiveRange, MaximumRange, BulletSpeed, color);
+            this.GetWorld().AddChild(bullet);
+        }
+
+        _currentSpreadInc += Mathf.Deg2Rad(SpreadIncrease);
+        _currentRecoil    += Mathf.Deg2Rad(random.NextFloat(RecoilMin, RecoilMax));
     }
 
     public override void _Process(float delta)

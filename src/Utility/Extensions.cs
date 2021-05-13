@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 public static class Extensions
@@ -23,6 +24,19 @@ public static class Extensions
     {
         node.GetParent().RemoveChild(node);
         node.QueueFree();
+    }
+
+    public static float NextFloat(this Random random)
+        => (float)random.NextDouble();
+    public static float NextFloat(this Random random, float min, float max)
+        => min + NextFloat(random) * (max - min);
+
+    public static float NextGaussian(this Random random, float stdDev = 1.0F, float mean = 0.0F)
+    {
+        var u1 = 1.0F - random.NextFloat();
+        var u2 = 1.0F - random.NextFloat();
+        var normal = Mathf.Sqrt(-2.0F * Mathf.Log(u1)) * Mathf.Sin(2.0F * Mathf.Pi * u2);
+        return  mean + stdDev * normal;
     }
 }
 

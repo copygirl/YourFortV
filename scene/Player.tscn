@@ -68,10 +68,11 @@ texture = ExtResource( 7 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
 Knockback = 50.0
-Spread = 3.0
+Spread = 1.5
 SpreadIncrease = 1.0
 RecoilMin = 3.0
 RecoilMax = 5.0
+BulletSpeed = 1200
 
 [node name="Tip" type="Node2D" parent="Items/Revolver"]
 position = Vector2( 15, -2.5 )
@@ -87,10 +88,13 @@ script = ExtResource( 8 )
 EffectiveRange = 240
 MaximumRange = 360
 Knockback = 135.0
-Spread = 14.0
-SpreadIncrease = 20.0
+Spread = 8.0
+SpreadIncrease = 10.0
 RecoilMin = 6.0
 RecoilMax = 12.0
+BulletSpeed = 1000
+BulletsPetShot = 8
+BulletOpacity = 0.1
 
 [node name="Tip" type="Node2D" parent="Items/Shotgun"]
 position = Vector2( 22, -1.5 )
@@ -109,6 +113,8 @@ Knockback = 100.0
 SpreadIncrease = 2.0
 RecoilMin = 8.0
 RecoilMax = 8.0
+BulletSpeed = 4000
+BulletOpacity = 0.4
 
 [node name="Tip" type="Node2D" parent="Items/Rifle"]
 position = Vector2( 24, -1.5 )
@@ -122,8 +128,8 @@ texture = ExtResource( 12 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
 Knockback = 30.0
-Spread = 1.0
-SpreadIncrease = 1.2
+Spread = 0.6
+SpreadIncrease = 0.8
 RecoilMin = 1.0
 RecoilMax = 2.5
 
