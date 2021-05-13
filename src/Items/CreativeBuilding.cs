@@ -37,11 +37,11 @@ public class CreativeBuilding : Node2D
     {
         if (!Visible || !(Player is LocalPlayer)) return;
 
-        if (ev.IsActionPressed("interact_place")) {
+        if (ev.IsActionPressed("interact_primary")) {
             GetTree().SetInputAsHandled();
             _currentMode = (((_currentMode == null) && _canBuild) ? BuildMode.Placing : (BuildMode?)null);
         }
-        if (ev.IsActionPressed("interact_break")) {
+        if (ev.IsActionPressed("interact_secondary")) {
             GetTree().SetInputAsHandled();
             _currentMode = ((_currentMode == null) ? BuildMode.Breaking : (BuildMode?)null);
         }
@@ -56,14 +56,14 @@ public class CreativeBuilding : Node2D
 
         if (_currentMode == BuildMode.Placing) {
             if (!_canBuild) _currentMode = null;
-            else if (!Input.IsActionPressed("interact_place")) {
+            else if (!Input.IsActionPressed("interact_primary")) {
                 RpcId(1, nameof(PlaceLine), _startPos.X, _startPos.Y, _direction, _length);
                 _currentMode = null;
             }
         }
 
         if (_currentMode == BuildMode.Breaking) {
-            if (!Input.IsActionPressed("interact_break")) {
+            if (!Input.IsActionPressed("interact_secondary")) {
                 RpcId(1, nameof(BreakLine), _startPos.X, _startPos.Y, _direction, _length);
                 _currentMode = null;
             }

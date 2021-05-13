@@ -35,8 +35,7 @@ public class Weapon : Sprite
     {
         if (!(Player is LocalPlayer)) return;
 
-        // TODO: Is not "place", is shoot!
-        if (ev.IsActionPressed("interact_place")) {
+        if (ev.IsActionPressed("interact_primary")) {
             GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
             // TODO: Spawn bullet or something.
             // TODO: Tell server (and other clients) we shot.

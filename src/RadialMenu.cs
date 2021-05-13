@@ -13,6 +13,7 @@ public class RadialMenu : Node2D
 
     private float _startAngle;
     private Node2D _selected;
+    private DateTime? _showUntil;
 
     public override void _Ready()
     {
@@ -29,36 +30,76 @@ public class RadialMenu : Node2D
     {
         if (ev.IsActionPressed("interact_select")) {
             Position = this.GetClient().Cursor.ScreenPosition.Round();
-            Visible = true;
+            Visible  = true;
+            Modulate = Colors.White;
 
             var items = GetItems();
             _selected = items.Current;
             items.Current = null;
 
+            _showUntil = null;
             ActiveName.Text = _selected?.Name ?? "";
             Update();
         }
-        // TODO: Add scrollwheel support.
+        if (ev.IsActionPressed("interact_select_dec") || ev.IsActionPressed("interact_select_inc")) {
+            var diff  = ev.IsActionPressed("interact_select_inc") ? 1 : -1;
+            var items = GetItems();
+            // TODO: Should current item be equipped until radial menu disappears again?
+            //       Perhaps for balance reasons?
+
+            if (Visible && (_showUntil == null)) {
+                // Don't do anything if radial menu is show due to selection
+                // being open and the mouse is outside of the selection radius.
+                var cursor = ToLocal(this.GetClient().Cursor.ScreenPosition);
+                if (cursor.Length() > InnerRadius) return;
+            } else {
+                Position   = this.GetClient().LocalPlayer.GetGlobalTransformWithCanvas().origin;
+                _selected  = items.Current;
+                _showUntil = DateTime.Now + TimeSpan.FromSeconds(0.6);
+                Visible    = true;
+                Modulate   = Colors.White;
+            }
+
+            if (_selected == null) {
+                if (items.Count == 0) return;
+                _selected = items.Current = items[0];
+            } else {
+                var index = _selected.GetIndex();
+                _selected = items.Current = items[Mathf.PosMod(index + diff, items.Count)];
+            }
+            ActiveName.Text = _selected?.Name ?? "";
+            Update();
+        }
     }
 
     public override void _Process(float delta)
     {
         if (!Visible) return;
-        var items = GetItems();
 
-        var cursorPos = ToLocal(this.GetClient().Cursor.ScreenPosition);
-        var angle = cursorPos.Angle() - _startAngle;
-        var index = (int)((angle / Mathf.Tau + 1) % 1 * MinElements);
-        if ((cursorPos.Length() > InnerRadius) && (index < items.Count) && (items[index] != _selected)) {
+        if (_showUntil != null) {
+            if (DateTime.Now >= _showUntil) {
+                Modulate = new Color(Modulate, Modulate.a - delta * 3);
+                if (Modulate.a <= 0) {
+                    _showUntil = null;
+                    Visible = false;
+                }
+            }
+            return;
+        }
+
+        var items  = GetItems();
+        var cursor = ToLocal(this.GetClient().Cursor.ScreenPosition);
+        var angle  = cursor.Angle() - _startAngle;
+        var index  = (int)((angle / Mathf.Tau + 1) % 1 * MinElements);
+        if ((cursor.Length() > InnerRadius) && (index < items.Count) && (items[index] != _selected)) {
             _selected = items[index];
             ActiveName.Text = _selected?.Name ?? "";
             Update();
         }
 
         if (!Input.IsActionPressed("interact_select")) {
-            Visible = false;
+            _showUntil = DateTime.Now;
             items.Current = _selected;
-            Update();
         }
     }
 
