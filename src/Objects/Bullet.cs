@@ -33,16 +33,30 @@ public class Bullet : Node2D
     {
         _age += TimeSpan.FromSeconds(delta);
 
-        if (_distance < MaximumRange) {
-            _distance = Mathf.Min(MaximumRange, Speed * (float)_age.TotalSeconds);
-            Position = _startPosition + Direction * _distance;
-            Update();
-        }
-
         if (_age > TRAIL_DURATION) {
             Modulate = new Color(Modulate, Modulate.a - delta * 2);
             if (Modulate.a <= 0) this.RemoveFromParent();
         }
+    }
+
+    public override void _PhysicsProcess(float delta)
+    {
+        var previousPosition = Position;
+        _distance = Mathf.Min(MaximumRange, Speed * (float)_age.TotalSeconds);
+        Position  = _startPosition + Direction * _distance;
+
+        var collision = GetWorld2d().DirectSpaceState.IntersectRay(
+            previousPosition, Position, collisionLayer: 0b11);
+        if (collision.Count != 0) {
+            Position  = (Vector2)collision["position"];
+            _distance = _startPosition.DistanceTo(Position);
+            SetPhysicsProcess(false);
+        }
+
+        if (_distance > MaximumRange)
+            SetPhysicsProcess(false);
+
+        Update();
     }
 
     public override void _Draw()
