@@ -67,18 +67,17 @@ visible = false
 texture = ExtResource( 7 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
+Knockback = 50.0
 Spread = 3.0
 SpreadIncrease = 1.0
 RecoilMin = 3.0
 RecoilMax = 5.0
-RecoilRegen = 16.0
 
 [node name="Tip" type="Node2D" parent="Items/Revolver"]
 position = Vector2( 15, -2.5 )
 
 [node name="Fire" type="AudioStreamPlayer2D" parent="Items/Revolver"]
 stream = ExtResource( 14 )
-attenuation = 1.0
 
 [node name="Shotgun" type="Sprite" parent="Items"]
 visible = false
@@ -87,19 +86,17 @@ offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
 EffectiveRange = 240
 MaximumRange = 360
+Knockback = 135.0
 Spread = 14.0
 SpreadIncrease = 20.0
-SpreadRegen = 16.0
 RecoilMin = 6.0
 RecoilMax = 12.0
-RecoilRegen = 8.0
 
 [node name="Tip" type="Node2D" parent="Items/Shotgun"]
 position = Vector2( 22, -1.5 )
 
 [node name="Fire" type="AudioStreamPlayer2D" parent="Items/Shotgun"]
 stream = ExtResource( 13 )
-attenuation = 1.0
 
 [node name="Rifle" type="Sprite" parent="Items"]
 visible = false
@@ -108,27 +105,25 @@ offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
 EffectiveRange = 480
 MaximumRange = 920
+Knockback = 100.0
 SpreadIncrease = 2.0
-SpreadRegen = 2.0
 RecoilMin = 8.0
 RecoilMax = 8.0
-RecoilRegen = 8.0
 
 [node name="Tip" type="Node2D" parent="Items/Rifle"]
 position = Vector2( 24, -1.5 )
 
 [node name="Fire" type="AudioStreamPlayer2D" parent="Items/Rifle"]
 stream = ExtResource( 15 )
-attenuation = 1.0
 
 [node name="Assault Rifle" type="Sprite" parent="Items"]
 visible = false
 texture = ExtResource( 12 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
+Knockback = 30.0
 Spread = 1.0
 SpreadIncrease = 1.2
-SpreadRegen = 5.0
 RecoilMin = 1.0
 RecoilMax = 2.5
 
@@ -137,7 +132,6 @@ position = Vector2( 22, -1.5 )
 
 [node name="Fire" type="AudioStreamPlayer2D" parent="Items/Assault Rifle"]
 stream = ExtResource( 16 )
-attenuation = 1.0
 
 [node name="Super Soaker" type="Sprite" parent="Items"]
 visible = false

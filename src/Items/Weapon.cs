@@ -1,19 +1,17 @@
+using System;
 using Godot;
 
 public class Weapon : Sprite
 {
     [Export] public int EffectiveRange { get; set; } = 320;
     [Export] public int MaximumRange { get; set; } = 640;
+    [Export] public float Knockback { get; set; } = 0.0F;
 
     [Export] public float Spread { get; set; } = 0.0F;
     [Export] public float SpreadIncrease { get; set; } = 0.0F;
-    [Export] public float SpreadRegen { get; set; } = 10.0F;
 
     [Export] public float RecoilMin { get; set; } = 0.0F;
     [Export] public float RecoilMax { get; set; } = 0.0F;
-    [Export] public float RecoilRegen { get; set; } = 10.0F;
-
-    // TODO: Make the Regen multiplicative instead of substractive?
 
 
     public Cursor Cursor { get; private set; }
@@ -33,7 +31,7 @@ public class Weapon : Sprite
 
     public override void _UnhandledInput(InputEvent ev)
     {
-        if (!(Player is LocalPlayer)) return;
+        if (!(Player is LocalPlayer localPlayer)) return;
 
         if (ev.IsActionPressed("interact_primary")) {
             GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
@@ -41,13 +39,17 @@ public class Weapon : Sprite
             // TODO: Tell server (and other clients) we shot.
             _currentSpreadInc += Mathf.Deg2Rad(SpreadIncrease);
             _currentRecoil    += Mathf.Deg2Rad((float)GD.RandRange(RecoilMin, RecoilMax));
+
+            localPlayer.Velocity -= Mathf.Polar2Cartesian(Knockback, Rotation);
         }
     }
 
     public override void _Process(float delta)
     {
-        _currentSpreadInc = Mathf.Max(0, _currentSpreadInc - Mathf.Deg2Rad(SpreadRegen) * delta);
-        _currentRecoil    = Mathf.Max(0, _currentRecoil    - Mathf.Deg2Rad(RecoilRegen) * delta);
+        var spreadDecrease = Mathf.Max(Mathf.Tau / 300, _currentSpreadInc * 2);
+        var recoilDecrease = Mathf.Max(Mathf.Tau / 800, _currentRecoil * 2);
+        _currentSpreadInc = Mathf.Max(0, _currentSpreadInc - spreadDecrease * delta);
+        _currentRecoil    = Mathf.Max(0, _currentRecoil    - recoilDecrease * delta);
 
         if (Visible && (Player is LocalPlayer)) {
             AimDirection = Cursor.Position.AngleToPoint(Player.Position);
