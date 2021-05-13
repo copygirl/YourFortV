@@ -41,12 +41,16 @@ public class Weapon : Sprite
 
     public Cursor Cursor { get; private set; }
     public Player Player { get; private set; }
+    public Vector2 TipOffset { get; private set; }
 
     public override void _Ready()
     {
         Rounds = Capacity;
-        Cursor = this.GetClient()?.Cursor;
-        Player = GetParent().GetParent<Player>();
+
+        Cursor    = this.GetClient()?.Cursor;
+        Player    = GetParent().GetParent<Player>();
+        TipOffset = GetNode<Node2D>("Tip").Position;
+        GetNode<Node2D>("Tip").RemoveFromParent();
     }
 
     public override void _UnhandledInput(InputEvent ev)
@@ -100,7 +104,28 @@ public class Weapon : Sprite
                         Fire();
                 }
 
-                AimDirection = Cursor.Position.AngleToPoint(Player.Position);
+                //           Gun   TipOffset                     C = Cursor
+                //            v        v        b                     v
+                //      x---###########x------------------------------x
+                //      |   ##==#                      _____-----
+                //    a |   ##               _____-----
+                //      |          _____-----  c
+                //      x_____-----
+                //      ^
+                // B = Player
+
+                // The length of `a` and `c` as well as the angle of `c` are known.
+                // `a` is the y component of the weapon's TipOffset.
+                // `c` is the line connecting the player and cursor.
+                // Find out the angle `C` to subtract from the already known angle of `c`.
+                // CREDIT to lizzie for helping me figure out this trigonometry problem.
+
+                var a = TipOffset.y * ((Scale.y > 0) ? 1 : -1);
+                var c = Player.Position.DistanceTo(Cursor.Position);
+                var angleC = Mathf.Asin(a / c);
+                AimDirection = Cursor.Position.AngleToPoint(Player.Position) - angleC;
+                // FIXME: Angle calculation when cursor is too close to player.
+
                 RpcId(1, nameof(SendAimAngle), AimDirection);
                 Update();
             }
@@ -120,7 +145,7 @@ public class Weapon : Sprite
         if (!(Player is LocalPlayer)) return;
         // Draws an "aiming cone" to show where bullets might travel.
 
-        var tip   = GetNode<Node2D>("Tip").Position + new Vector2(4, 0);
+        var tip   = TipOffset + new Vector2(4, 0);
         var angle = Mathf.Sin((Mathf.Deg2Rad(Spread) + _currentSpreadInc) / 2);
         var color = Colors.Black;
 
@@ -202,10 +227,7 @@ public class Weapon : Sprite
         var random = new Random(seed);
         var angle = aimDirection - _currentRecoil * (toRight ? 1 : -1);
 
-        var tip = GetNode<Node2D>("Tip").Position;
-        if (!toRight) tip.y *= -1;
-        tip = tip.Rotated(angle);
-
+        var tip = (toRight ? TipOffset : TipOffset * new Vector2(1, -1)).Rotated(angle);
         for (var i = 0; i < BulletsPerShot; i++) {
             var spread = (Mathf.Deg2Rad(Spread) + _currentSpreadInc) * Mathf.Clamp(random.NextGaussian(0.4F), -1, 1);
             var dir    = Mathf.Polar2Cartesian(1, angle + spread);
