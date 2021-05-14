@@ -163,7 +163,7 @@ public class Weapon : Sprite
 
     protected virtual bool FireInternal(float aimDirection, bool toRight, int seed)
     {
-        if ((_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
+        if (!Visible || (_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
 
         if (this.GetGame() is Client)
             GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
@@ -209,7 +209,7 @@ public class Weapon : Sprite
 
     private bool ReloadInternal()
     {
-        if ((Rounds >= Capacity) || (_reloading != null)) return false;
+        if (!Visible || (Rounds >= Capacity) || (_reloading != null)) return false;
         // TODO: Play reload sound.
         _reloading = ReloadTime;
         return true;

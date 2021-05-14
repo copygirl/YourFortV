@@ -21,7 +21,6 @@ public class Player : KinematicBody2D, IInitializable
         Items  = GetNode<IItems>("Items");
 
         RsetConfig("position", MultiplayerAPI.RPCMode.Puppetsync);
-        RsetConfig(nameof(NetworkID), MultiplayerAPI.RPCMode.Puppetsync);
         RsetConfig(nameof(DisplayName), MultiplayerAPI.RPCMode.Puppetsync);
         RsetConfig(nameof(Color), MultiplayerAPI.RPCMode.Puppetsync);
     }

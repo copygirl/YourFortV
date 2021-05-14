@@ -59,7 +59,6 @@ public class EscapeMenuMultiplayer : Container
                 break;
         }
 
-
         ServerPort.Editable      =  server.IsRunning;
         ServerOpenClose.Disabled = !server.IsRunning;
         ServerOpenClose.Text     = (server.IsRunning && !server.IsSingleplayer) ? "Close Server" : "Open Server";
@@ -105,8 +104,6 @@ public class EscapeMenuMultiplayer : Container
             server.Stop();
             server.Start(port);
             client.Connect("127.0.0.1", port);
-            // TODO: Pause server processing (including packets, RPC, Sync) until client reconnects?
-            //       If we're doing that, also make sure to re-map packet and RPC targets to point to new NetworkID.
         } else {
             client.Disconnect();
             server.Stop();
@@ -127,10 +124,7 @@ public class EscapeMenuMultiplayer : Container
             server.Stop();
             server.GetWorld().ClearPlayers();
             server.GetWorld().ClearBlocks();
-
             client.Disconnect();
-            this.GetWorld().ClearPlayers();
-            this.GetWorld().ClearBlocks();
         }
 
         if (client.Status == ConnectionStatus.Disconnected) {
@@ -145,8 +139,6 @@ public class EscapeMenuMultiplayer : Container
             client.Connect(address, port);
         } else {
             client.Disconnect();
-            this.GetWorld().ClearPlayers();
-            this.GetWorld().ClearBlocks();
         }
     }
 }

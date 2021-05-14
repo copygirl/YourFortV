@@ -1,11 +1,10 @@
 using System;
-using System.Linq;
 using Godot;
 
 // TODO: Allow for initially private integrated server to open itself up to the public.
 public class Server : Game
 {
-    private Player _localPlayer = null;
+    internal Player LocalPlayer { get; private set; }
     private bool _isLocalPlayerConnected = false;
 
     public NetworkedMultiplayerENet Peer => (NetworkedMultiplayerENet)Multiplayer.NetworkPeer;
@@ -63,7 +62,7 @@ public class Server : Game
         _isLocalPlayerConnected = false;
 
         foreach (var player in this.GetWorld().Players)
-            if (player != _localPlayer)
+            if (player != LocalPlayer)
                 player.RemoveFromParent();
     }
 
@@ -76,10 +75,9 @@ public class Server : Game
             Multiplayer.RefuseNewNetworkConnections = true;
         }
 
-        if ((_localPlayer != null) && !_isLocalPlayerConnected &&
+        if ((LocalPlayer != null) && !_isLocalPlayerConnected &&
             (Peer.GetPeerAddress(networkID) == "127.0.0.1")) {
-            _localPlayer.RsetId(networkID, nameof(Player.NetworkID), networkID);
-            _localPlayer.NetworkID = networkID;
+            LocalPlayer.NetworkID   = networkID;
             _isLocalPlayerConnected = true;
         } else {
             var world = this.GetWorld();
@@ -102,7 +100,7 @@ public class Server : Game
                     block.Color, block.Unbreakable);
 
             world.Rpc(nameof(World.SpawnPlayer), networkID, Vector2.Zero);
-            if (IsSingleplayer) _localPlayer = world.GetPlayer(networkID);
+            if (IsSingleplayer) LocalPlayer = world.GetPlayer(networkID);
         }
     }
 
@@ -112,7 +110,7 @@ public class Server : Game
         var player = world.GetPlayer(networkID);
 
         // Local player stays around for reconnecting.
-        if (_localPlayer == player) return;
+        if (LocalPlayer == player) return;
 
         world.Rpc(nameof(World.Despawn), world.GetPathTo(player));
     }
