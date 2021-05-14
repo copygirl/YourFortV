@@ -27,6 +27,7 @@ public class Weapon : Sprite
 
     public float _fireDelay;
     public float? _reloading;
+    public bool _lowered;
 
     private float _currentSpreadInc = 0.0F;
     private float _currentRecoil    = 0.0F;
@@ -121,9 +122,16 @@ public class Weapon : Sprite
 
                 var a = TipOffset.y * ((Scale.y > 0) ? 1 : -1);
                 var c = Player.Position.DistanceTo(Cursor.Position);
-                var angleC = Mathf.Asin(a / c);
-                AimDirection = Cursor.Position.AngleToPoint(Player.Position) - angleC;
-                // FIXME: Angle calculation when cursor is too close to player.
+                if (c < TipOffset.x) {
+                    // If the cursor is too close to the player, put the
+                    // weapon in a "lowered" state, where it can't be shot.
+                    AimDirection = Mathf.Deg2Rad((Cursor.Position.x > Player.Position.x) ? 30 : 150);
+                    _lowered     = true;
+                } else {
+                    var angleC   = Mathf.Asin(a / c);
+                    AimDirection = Cursor.Position.AngleToPoint(Player.Position) - angleC;
+                    _lowered     = false;
+                }
 
                 RPC.Unreliable(1, SendAimAngle, AimDirection);
                 Update();
@@ -163,7 +171,7 @@ public class Weapon : Sprite
 
     protected virtual bool FireInternal(float aimDirection, bool toRight, int seed)
     {
-        if (!Visible || (_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
+        if (!Visible || _lowered || (_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
 
         if (this.GetGame() is Client)
             GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
@@ -228,7 +236,7 @@ public class Weapon : Sprite
 
     public override void _Draw()
     {
-        if (!(Player is LocalPlayer)) return;
+        if (!(Player is LocalPlayer) || _lowered) return;
         // Draws an "aiming cone" to show where bullets might travel.
 
         var tip   = TipOffset + new Vector2(4, 0);
