@@ -83,23 +83,23 @@ public class Server : Game
             var world = this.GetWorld();
 
             foreach (var player in world.Players) {
-                world.RpcId(networkID, nameof(World.SpawnPlayer), player.NetworkID, player.Position);
+                RPC.Reliable(networkID, world.SpawnPlayer, player.NetworkID, player.Position);
 
                 // Send player's appearance.
                 player.Rset(nameof(Player.DisplayName), player.DisplayName);
                 player.Rset(nameof(Player.Color), player.Color);
 
                 // Send player's currently equipped item.
-                if (player.Items.Current != null) ((Node2D)player.Items).RpcId(
-                    networkID, nameof(Items.DoSetCurrent), player.Items.Current.Name);
+                if (player.Items.Current != null) RPC.Reliable(networkID,
+                    ((Items)player.Items).DoSetCurrent, player.Items.Current.Name);
             }
 
             foreach (var block in world.Blocks)
-                world.RpcId(networkID, nameof(World.SpawnBlock),
+                RPC.Reliable(networkID, world.SpawnBlock,
                     block.Position.X, block.Position.Y,
                     block.Color, block.Unbreakable);
 
-            world.Rpc(nameof(World.SpawnPlayer), networkID, Vector2.Zero);
+            RPC.Reliable(world.SpawnPlayer, networkID, Vector2.Zero);
             if (IsSingleplayer) LocalPlayer = world.GetPlayer(networkID);
         }
     }
@@ -112,6 +112,6 @@ public class Server : Game
         // Local player stays around for reconnecting.
         if (LocalPlayer == player) return;
 
-        world.Rpc(nameof(World.Despawn), world.GetPathTo(player));
+        RPC.Reliable(world.Despawn, world.GetPathTo(player));
     }
 }

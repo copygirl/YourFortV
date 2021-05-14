@@ -57,14 +57,14 @@ public class CreativeBuilding : Node2D
         if (_currentMode == BuildMode.Placing) {
             if (!_canBuild) _currentMode = null;
             else if (!Input.IsActionPressed("interact_primary")) {
-                RpcId(1, nameof(PlaceLine), _startPos.X, _startPos.Y, _direction, _length);
+                RPC.Reliable(1, PlaceLine, _startPos.X, _startPos.Y, _direction, _length);
                 _currentMode = null;
             }
         }
 
         if (_currentMode == BuildMode.Breaking) {
             if (!Input.IsActionPressed("interact_secondary")) {
-                RpcId(1, nameof(BreakLine), _startPos.X, _startPos.Y, _direction, _length);
+                RPC.Reliable(1, BreakLine, _startPos.X, _startPos.Y, _direction, _length);
                 _currentMode = null;
             }
         }
@@ -121,7 +121,7 @@ public class CreativeBuilding : Node2D
         foreach (var pos in GetBlockPositions(start, direction, length)) {
             if (world.GetBlockAt(pos) != null) continue;
             var color = Player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
-            world.Rpc(nameof(World.SpawnBlock), pos.X, pos.Y, color, false);
+            RPC.Reliable(world.SpawnBlock, pos.X, pos.Y, color, false);
         }
     }
 
@@ -137,7 +137,7 @@ public class CreativeBuilding : Node2D
         foreach (var pos in GetBlockPositions(start, direction, length)) {
             var block = world.GetBlockAt(pos);
             if (block?.Unbreakable != false) continue;
-            world.Rpc(nameof(World.Despawn), world.GetPathTo(block));
+            RPC.Reliable(world.Despawn, world.GetPathTo(block));
         }
     }
 }

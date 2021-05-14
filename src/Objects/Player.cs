@@ -31,6 +31,7 @@ public class Player : KinematicBody2D, IInitializable
     public override void _Process(float delta)
     {
         if ((Position.y > 9000) && (this.GetGame() is Server))
+            // Can't use RPC helper method here since player is not a LocalPlayer here.
             RpcId(NetworkID, nameof(LocalPlayer.ResetPosition), Vector2.Zero);
     }
 

@@ -39,16 +39,14 @@ public class Items : Node2D, IItems
         _current = node;
 
         if (sendRpc) {
-            if (this.GetGame() is Server) Rpc(nameof(DoSetCurrent), _current?.Name);
-            else RpcId(1, nameof(DoSetCurrent), _current?.Name);
+            if (this.GetGame() is Server) RPC.Reliable(DoSetCurrent, _current?.Name);
+            else RPC.Reliable(1, DoSetCurrent, _current?.Name);
         }
     }
     [Remote]
     public void DoSetCurrent(string name)
     {
-        if (this.GetGame() is Server) {
-            if (GetTree().GetRpcSenderId() != Player.NetworkID) return;
-        }
+        if ((this.GetGame() is Server) && (Player.NetworkID != GetTree().GetRpcSenderId())) return;
         var node = (name != null) ? GetNode<Node2D>(name) : null;
         SetCurrent(node, this.GetGame() is Server);
     }

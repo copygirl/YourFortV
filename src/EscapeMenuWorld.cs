@@ -105,6 +105,7 @@ public class EscapeMenuWorld : CenterContainer
 
         // Reset players' positions.
         foreach (var player in server.GetWorld().Players)
+            // Can't use RPC helper method here since player is not a LocalPlayer here.
             player.RpcId(player.NetworkID, nameof(LocalPlayer.ResetPosition), Vector2.Zero);
 
         save.ReadDataIntoWorld(server.GetWorld());

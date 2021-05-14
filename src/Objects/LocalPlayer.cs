@@ -23,7 +23,7 @@ public class LocalPlayer : Player
     public override void _Process(float delta)
     {
         base._Process(delta);
-        RpcUnreliableId(1, nameof(Player.Move), Position);
+        RPC.Unreliable(1, Move, Position);
     }
 
     public override void _PhysicsProcess(float delta)

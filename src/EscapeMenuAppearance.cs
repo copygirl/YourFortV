@@ -20,8 +20,8 @@ public class EscapeMenuAppearance : CenterContainer
         ColorSlider.Value = GD.Randf();
         ColorPreview.Modulate = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
 
-        this.GetClient().LocalPlayerSpawned += (player) => player.RpcId(1,
-            nameof(Player.ChangeAppearance), DisplayName.Text, ColorPreview.Modulate);
+        this.GetClient().LocalPlayerSpawned += (player)
+            => RPC.Reliable(1, player.ChangeAppearance, DisplayName.Text, ColorPreview.Modulate);
     }
 
     #pragma warning disable IDE0051
@@ -49,7 +49,6 @@ public class EscapeMenuAppearance : CenterContainer
         if (IsVisibleInTree()) return;
         var client = this.GetClient();
         if (client.Status == NetworkedMultiplayerPeer.ConnectionStatus.Connected)
-            client.LocalPlayer.RpcId(1, nameof(Player.ChangeAppearance),
-                                     DisplayName.Text, ColorPreview.Modulate);
+            RPC.Reliable(1, client.LocalPlayer.ChangeAppearance, DisplayName.Text, ColorPreview.Modulate);
     }
 }

@@ -75,8 +75,8 @@ public class WorldSave
 
     public void ReadDataIntoWorld(World world)
     {
-        world.Rpc(nameof(World.ClearBlocks));
+        RPC.Reliable(world.ClearBlocks);
         foreach (var (position, color, unbreakable) in Blocks)
-            world.Rpc(nameof(World.SpawnBlock), position.X, position.Y, color, unbreakable);
+            RPC.Reliable(world.SpawnBlock, position.X, position.Y, color, unbreakable);
     }
 }

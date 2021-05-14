@@ -125,7 +125,7 @@ public class Weapon : Sprite
                 AimDirection = Cursor.Position.AngleToPoint(Player.Position) - angleC;
                 // FIXME: Angle calculation when cursor is too close to player.
 
-                RpcUnreliableId(1, nameof(SendAimAngle), AimDirection);
+                RPC.Unreliable(1, SendAimAngle, AimDirection);
                 Update();
             }
         } else {
@@ -147,7 +147,7 @@ public class Weapon : Sprite
             if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
             // TODO: Verify input.
             // if ((value < 0) || (value > Mathf.Tau)) return;
-            Rpc(nameof(SendAimAngle), value);
+            RPC.Unreliable(SendAimAngle, value);
         } else if (!(Player is LocalPlayer))
             AimDirection = value;
     }
@@ -157,7 +157,7 @@ public class Weapon : Sprite
     {
         var seed = unchecked((int)GD.Randi());
         if (!FireInternal(AimDirection, Scale.y > 0, seed)) return;
-        RpcId(1, nameof(SendFire), AimDirection, Scale.y > 0, seed);
+        RPC.Reliable(1, SendFire, AimDirection, Scale.y > 0, seed);
         ((LocalPlayer)Player).Velocity -= Mathf.Polar2Cartesian(Knockback, Rotation);
     }
 
@@ -198,14 +198,14 @@ public class Weapon : Sprite
             if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
             // TODO: Verify input.
             if (FireInternal(aimDirection, toRight, seed))
-                Rpc(nameof(SendFire), aimDirection, toRight, seed);
+                RPC.Reliable(SendFire, aimDirection, toRight, seed);
         } else if (!(Player is LocalPlayer))
             FireInternal(aimDirection, toRight, seed);
     }
 
 
     private void Reload()
-        { if (ReloadInternal()) RpcId(1, nameof(SendReload)); }
+        { if (ReloadInternal()) RPC.Reliable(1, SendReload); }
 
     private bool ReloadInternal()
     {
@@ -220,7 +220,7 @@ public class Weapon : Sprite
     {
         if (this.GetGame() is Server) {
             if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
-            if (ReloadInternal()) Rpc(nameof(SendReload));
+            if (ReloadInternal()) RPC.Reliable(SendReload);
         } else if (!(Player is LocalPlayer))
             ReloadInternal();
     }
