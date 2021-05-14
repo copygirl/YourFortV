@@ -25,7 +25,7 @@ public class RadialMenu : Node2D
     }
 
     public IItems GetItems()
-        => this.GetClient().LocalPlayer?.GetNode<IItems>("Items");
+        => this.GetClient().LocalPlayer?.Items;
 
     public override void _UnhandledInput(InputEvent ev)
     {

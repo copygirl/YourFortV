@@ -7,6 +7,7 @@ public class Player : KinematicBody2D, IInitializable
 
     public Label DisplayNameLabel { get; private set; }
     public Sprite Sprite { get; private set; }
+    public IItems Items { get; private set; }
 
 
     public int NetworkID { get => int.Parse(Name); set => Name = value.ToString(); }
@@ -16,7 +17,8 @@ public class Player : KinematicBody2D, IInitializable
     public void Initialize()
     {
         DisplayNameLabel = GetNode<Label>(DisplayNamePath);
-        Sprite           = GetNode<Sprite>(SpritePath);
+        Sprite = GetNode<Sprite>(SpritePath);
+        Items  = GetNode<IItems>("Items");
 
         RsetConfig("position", MultiplayerAPI.RPCMode.Puppetsync);
         RsetConfig(nameof(NetworkID), MultiplayerAPI.RPCMode.Puppetsync);

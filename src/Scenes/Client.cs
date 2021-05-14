@@ -16,7 +16,11 @@ public class Client : Game
 
     public event Action Connected;
     public event Action Disconnected;
+    public event Action<LocalPlayer> LocalPlayerSpawned;
     public event Action<ConnectionStatus> StatusChanged;
+
+    internal void FireLocalPlayerSpawned(LocalPlayer player)
+        => LocalPlayerSpawned?.Invoke(player);
 
 
     public override void _Ready()

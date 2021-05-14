@@ -20,10 +20,8 @@ public class EscapeMenuAppearance : CenterContainer
         ColorSlider.Value = GD.Randf();
         ColorPreview.Modulate = Color.FromHsv((float)ColorSlider.Value, 1.0F, 1.0F);
 
-        // FIXME: LocalPlayer hasn't spawned yet on connection.
-        // var client = this.GetClient();
-        // client.Connected += () => client.LocalPlayer.RpcId(1,
-        //     nameof(Player.ChangeAppearance), DisplayName.Text, ColorPreview.Modulate);
+        this.GetClient().LocalPlayerSpawned += (player) => player.RpcId(1,
+            nameof(Player.ChangeAppearance), DisplayName.Text, ColorPreview.Modulate);
     }
 
     #pragma warning disable IDE0051

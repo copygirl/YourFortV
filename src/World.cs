@@ -41,12 +41,6 @@ public class World : Node
 
     [PuppetSync]
     public void SpawnBlock(int x, int y, Color color, bool unbreakable)
-        => SpawnBlockInternal(x, y, color, unbreakable);
-    [Puppet]
-    public void SendBlock(int x, int y, Color color, bool unbreakable)
-        => SpawnBlockInternal(x, y, color, unbreakable);
-
-    private void SpawnBlockInternal(int x, int y, Color color, bool unbreakable)
     {
         var position = new BlockPos(x, y);
         var block    = BlockScene.Init<Block>();
@@ -58,21 +52,16 @@ public class World : Node
     }
 
     [PuppetSync]
-    public void SpawnPlayer(int networkID, Vector2 position, string displayName, Color color)
-        => SpawnPlayerInternal(networkID, position, displayName, color);
-    [Puppet]
-    public void SendPlayer(int networkID, Vector2 position, string displayName, Color color)
-        => SpawnPlayerInternal(networkID, position, displayName, color);
-
-    private void SpawnPlayerInternal(int networkID, Vector2 position, string displayName, Color color)
+    public void SpawnPlayer(int networkID, Vector2 position)
     {
         var isLocal = networkID == GetTree().GetNetworkUniqueId();
         var player  = (isLocal ? LocalPlayerScene : PlayerScene).Init<Player>();
-        player.NetworkID   = networkID;
-        player.Position    = position;
-        player.DisplayName = displayName;
-        player.Color       = color;
+        player.NetworkID = networkID;
+        player.Position  = position;
         PlayerContainer.AddChild(player);
+
+        if (player is LocalPlayer localPlayer)
+            this.GetClient().FireLocalPlayerSpawned(localPlayer);
     }
 
     [PuppetSync]

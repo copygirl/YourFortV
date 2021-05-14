@@ -61,6 +61,10 @@ public class Server : Game
 
         IsSingleplayer = false;
         _isLocalPlayerConnected = false;
+
+        foreach (var player in this.GetWorld().Players)
+            if (player != _localPlayer)
+                player.RemoveFromParent();
     }
 
 
@@ -80,16 +84,24 @@ public class Server : Game
         } else {
             var world = this.GetWorld();
 
-            foreach (var player in world.Players)
-                world.RpcId(networkID, nameof(World.SpawnPlayer),
-                    player.NetworkID, player.Position, player.DisplayName, player.Color);
+            foreach (var player in world.Players) {
+                world.RpcId(networkID, nameof(World.SpawnPlayer), player.NetworkID, player.Position);
 
-            foreach (var block in world.BlockContainer.GetChildren().Cast<Block>())
-                world.RpcId(networkID, nameof(World.SendBlock),
+                // Send player's appearance.
+                player.Rset(nameof(Player.DisplayName), player.DisplayName);
+                player.Rset(nameof(Player.Color), player.Color);
+
+                // Send player's currently equipped item.
+                if (player.Items.Current != null) ((Node2D)player.Items).RpcId(
+                    networkID, nameof(Items.DoSetCurrent), player.Items.Current.Name);
+            }
+
+            foreach (var block in world.Blocks)
+                world.RpcId(networkID, nameof(World.SpawnBlock),
                     block.Position.X, block.Position.Y,
                     block.Color, block.Unbreakable);
 
-            world.Rpc(nameof(World.SpawnPlayer), networkID, Vector2.Zero, "", Colors.Red);
+            world.Rpc(nameof(World.SpawnPlayer), networkID, Vector2.Zero);
             if (IsSingleplayer) _localPlayer = world.GetPlayer(networkID);
         }
     }

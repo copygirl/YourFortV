@@ -15,6 +15,8 @@ public class Items : Node2D, IItems
 {
     [Export] public NodePath DefaultItemPath { get; set; }
 
+    public Player Player { get; private set; }
+
     private Node2D _current;
     public int Count => GetChildCount();
     public Node2D this[int index] => GetChild<Node2D>(index);
@@ -22,6 +24,7 @@ public class Items : Node2D, IItems
 
     public override void _Ready()
     {
+        Player = GetParent<Player>();
         foreach (var item in this) SetActive(item, false);
         if (DefaultItemPath != null) SetCurrent(GetNode<Node2D>(DefaultItemPath), false);
     }
@@ -41,8 +44,11 @@ public class Items : Node2D, IItems
         }
     }
     [Remote]
-    private void DoSetCurrent(string name)
+    public void DoSetCurrent(string name)
     {
+        if (this.GetGame() is Server) {
+            if (GetTree().GetRpcSenderId() != Player.NetworkID) return;
+        }
         var node = (name != null) ? GetNode<Node2D>(name) : null;
         SetCurrent(node, this.GetGame() is Server);
     }
