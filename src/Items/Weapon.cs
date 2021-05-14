@@ -2,9 +2,8 @@ using System;
 using Godot;
 
 // TODO: "Click" sound when attempting to fire when not ready, or empty.
-// TODO: "Reload" sound when reloading.
 // TODO: "Single reload" for revolver & shotgun.
-// TODO: Add outline around sprites.
+// TODO: Add outline around weapon sprites.
 
 public class Weapon : Sprite
 {
@@ -58,8 +57,7 @@ public class Weapon : Sprite
         if (!(Player is LocalPlayer)) return;
         if (ev.IsActionPressed("interact_primary"))
             { HoldingTrigger = TimeSpan.Zero; OnTriggerPressed(); }
-        if (ev.IsActionPressed("interact_reload") && (Rounds < Capacity) && (_reloading == null))
-            { _reloading = ReloadTime; }
+        if (ev.IsActionPressed("interact_reload")) Reload();
     }
 
     protected virtual void OnTriggerPressed() => Fire();
@@ -82,9 +80,7 @@ public class Weapon : Sprite
                     Rounds = Capacity;
                     _reloading = null;
                 }
-            } else if (Rounds <= 0)
-                // Automatically reload when out of rounds.
-                _reloading = ReloadTime;
+            }
 
             if (_fireDelay > 0) {
                 _fireDelay -= delta;
@@ -96,6 +92,9 @@ public class Weapon : Sprite
             }
 
             if (Player is LocalPlayer) {
+                // Automatically reload when out of rounds.
+                if (Rounds <= 0) Reload();
+
                 if (HoldingTrigger != null) {
                     if (!Input.IsActionPressed("interact_primary")) {
                         HoldingTrigger = null;
@@ -126,7 +125,7 @@ public class Weapon : Sprite
                 AimDirection = Cursor.Position.AngleToPoint(Player.Position) - angleC;
                 // FIXME: Angle calculation when cursor is too close to player.
 
-                RpcId(1, nameof(SendAimAngle), AimDirection);
+                RpcUnreliableId(1, nameof(SendAimAngle), AimDirection);
                 Update();
             }
         } else {
@@ -139,6 +138,93 @@ public class Weapon : Sprite
         else               if (angle <  80.0F) Scale = new Vector2(1,  1);
         Rotation = AimDirection - _currentRecoil * ((Scale.y > 0) ? 1 : -1);
     }
+
+
+    [Remote]
+    private void SendAimAngle(float value)
+    {
+        if (this.GetGame() is Server) {
+            if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+            // TODO: Verify input.
+            // if ((value < 0) || (value > Mathf.Tau)) return;
+            Rpc(nameof(SendAimAngle), value);
+        } else if (!(Player is LocalPlayer))
+            AimDirection = value;
+    }
+
+
+    private void Fire()
+    {
+        var seed = unchecked((int)GD.Randi());
+        if (!FireInternal(AimDirection, Scale.y > 0, seed)) return;
+        RpcId(1, nameof(SendFire), AimDirection, Scale.y > 0, seed);
+        ((LocalPlayer)Player).Velocity -= Mathf.Polar2Cartesian(Knockback, Rotation);
+    }
+
+    protected virtual bool FireInternal(float aimDirection, bool toRight, int seed)
+    {
+        if ((_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
+
+        if (this.GetGame() is Client)
+            GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
+
+        var random = new Random(seed);
+        var angle = aimDirection - _currentRecoil * (toRight ? 1 : -1);
+
+        var tip = (toRight ? TipOffset : TipOffset * new Vector2(1, -1)).Rotated(angle);
+        for (var i = 0; i < BulletsPerShot; i++) {
+            var spread = (Mathf.Deg2Rad(Spread) + _currentSpreadInc) * Mathf.Clamp(random.NextGaussian(0.4F), -1, 1);
+            var dir    = Mathf.Polar2Cartesian(1, angle + spread);
+            var color  = new Color(Player.Color, BulletOpacity);
+            var bullet = new Bullet(Player.Position + tip, dir, EffectiveRange, MaximumRange, BulletVelocity, color);
+            this.GetWorld().AddChild(bullet);
+        }
+
+        _currentSpreadInc += Mathf.Deg2Rad(SpreadIncrease);
+        _currentRecoil    += Mathf.Deg2Rad(random.NextFloat(RecoilMin, RecoilMax));
+
+        if ((this.GetGame() is Server) || (Player is LocalPlayer)) {
+            // Do not keep track of fire rate or ammo for other players.
+            _fireDelay += 60.0F / RateOfFire;
+            Rounds -= 1;
+        }
+        return true;
+    }
+
+    [Remote]
+    private void SendFire(float aimDirection, bool toRight, int seed)
+    {
+        if (this.GetGame() is Server) {
+            if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+            // TODO: Verify input.
+            if (FireInternal(aimDirection, toRight, seed))
+                Rpc(nameof(SendFire), aimDirection, toRight, seed);
+        } else if (!(Player is LocalPlayer))
+            FireInternal(aimDirection, toRight, seed);
+    }
+
+
+    private void Reload()
+        { if (ReloadInternal()) RpcId(1, nameof(SendReload)); }
+
+    private bool ReloadInternal()
+    {
+        if ((Rounds >= Capacity) || (_reloading != null)) return false;
+        // TODO: Play reload sound.
+        _reloading = ReloadTime;
+        return true;
+    }
+
+    [Remote]
+    private void SendReload()
+    {
+        if (this.GetGame() is Server) {
+            if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+            if (ReloadInternal()) Rpc(nameof(SendReload));
+        } else if (!(Player is LocalPlayer))
+            ReloadInternal();
+    }
+
 
     public override void _Draw()
     {
@@ -183,67 +269,4 @@ public class Weapon : Sprite
     }
     private static Vector3 To3(Vector2 vec)
         => new Vector3(vec.x, vec.y, 0);
-
-
-    [Remote]
-    private void SendAimAngle(float value)
-    {
-        if (this.GetGame() is Server) {
-            if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
-            // TODO: Verify input.
-            // if ((value < 0) || (value > Mathf.Tau)) return;
-            Rpc(nameof(SendAimAngle), value);
-        } else if (!(Player is LocalPlayer))
-            AimDirection = value;
-    }
-
-    private void Fire()
-    {
-        var seed = unchecked((int)GD.Randi());
-        if (!FireInternal(AimDirection, Scale.y > 0, seed)) return;
-        RpcId(1, nameof(Fire), AimDirection, Scale.y > 0, seed);
-        ((LocalPlayer)Player).Velocity -= Mathf.Polar2Cartesian(Knockback, Rotation);
-    }
-
-    [Remote]
-    private void Fire(float aimDirection, bool toRight, int seed)
-    {
-        if (this.GetGame() is Server) {
-            if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
-            // TODO: Verify input.
-            if (FireInternal(aimDirection, toRight, seed))
-                Rpc(nameof(Fire), aimDirection, toRight, seed);
-        } else if (!(Player is LocalPlayer))
-            FireInternal(aimDirection, toRight, seed);
-    }
-
-    protected virtual bool FireInternal(float aimDirection, bool toRight, int seed)
-    {
-        if ((_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
-
-        if (this.GetGame() is Client)
-            GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
-
-        var random = new Random(seed);
-        var angle = aimDirection - _currentRecoil * (toRight ? 1 : -1);
-
-        var tip = (toRight ? TipOffset : TipOffset * new Vector2(1, -1)).Rotated(angle);
-        for (var i = 0; i < BulletsPerShot; i++) {
-            var spread = (Mathf.Deg2Rad(Spread) + _currentSpreadInc) * Mathf.Clamp(random.NextGaussian(0.4F), -1, 1);
-            var dir    = Mathf.Polar2Cartesian(1, angle + spread);
-            var color  = new Color(Player.Color, BulletOpacity);
-            var bullet = new Bullet(Player.Position + tip, dir, EffectiveRange, MaximumRange, BulletVelocity, color);
-            this.GetWorld().AddChild(bullet);
-        }
-
-        _currentSpreadInc += Mathf.Deg2Rad(SpreadIncrease);
-        _currentRecoil    += Mathf.Deg2Rad(random.NextFloat(RecoilMin, RecoilMax));
-
-        if ((this.GetGame() is Server) || (Player is LocalPlayer)) {
-            // Do not keep track of fire rate or ammo for other players.
-            _fireDelay += 60.0F / RateOfFire;
-            Rounds -= 1;
-        }
-        return true;
-    }
 }
