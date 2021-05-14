@@ -153,8 +153,8 @@ public class Weapon : Sprite
     {
         if (this.GetGame() is Server) {
             if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
-            // TODO: Verify input.
-            // if ((value < 0) || (value > Mathf.Tau)) return;
+            if (float.IsNaN(value = Mathf.PosMod(value, Mathf.Tau))) return;
+
             RPC.Unreliable(SendAimAngle, value);
         } else if (!(Player is LocalPlayer))
             AimDirection = value;
@@ -204,7 +204,8 @@ public class Weapon : Sprite
     {
         if (this.GetGame() is Server) {
             if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
-            // TODO: Verify input.
+            if (float.IsNaN(aimDirection = Mathf.PosMod(aimDirection, Mathf.Tau))) return;
+
             if (FireInternal(aimDirection, toRight, seed))
                 RPC.Reliable(SendFire, aimDirection, toRight, seed);
         } else if (!(Player is LocalPlayer))

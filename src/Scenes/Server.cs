@@ -1,7 +1,6 @@
 using System;
 using Godot;
 
-// TODO: Allow for initially private integrated server to open itself up to the public.
 public class Server : Game
 {
     internal Player LocalPlayer { get; private set; }
@@ -20,11 +19,11 @@ public class Server : Game
 
     public ushort StartSingleplayer()
     {
+        // TODO: When get_local_port is available, just use port 0 for an auto-assigned port.
+        //       Also see this PR: https://github.com/godotengine/godot/pull/48235
         for (var retries = 0; ; retries++) {
             try {
                 IsSingleplayer = true;
-                // TODO: When `get_local_port` is available, just use port 0 for an auto-assigned port.
-                //       Also see this PR: https://github.com/godotengine/godot/pull/48235
                 var port = (ushort)GD.RandRange(42000, 43000);
                 Start(port, "127.0.0.1", 1);
                 return port;

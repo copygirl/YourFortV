@@ -52,7 +52,9 @@ public class Player : KinematicBody2D, IInitializable
     public void ChangeAppearance(string displayName, Color color)
     {
         if (GetTree().GetRpcSenderId() != NetworkID) return;
-        // TODO: Validate input.
+        if (displayName == null) return;
+        // TODO: Verify display name some more.
+        if (color.a < 1.0F) return;
 
         Rset(nameof(DisplayName), displayName);
         Rset(nameof(Color), color);

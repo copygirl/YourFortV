@@ -113,6 +113,10 @@ public class CreativeBuilding : Node2D
     {
         if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
 
+        // TODO: Make sure position is a reasonable distance away.
+        if (!Enum.IsDefined(typeof(Facing), direction)) return;
+        if ((length < 1) || (length > MaxLength)) return;
+
         // TODO: Test if starting block is valid.
         // FIXME: Test if there is a player in the way.
 
@@ -130,7 +134,9 @@ public class CreativeBuilding : Node2D
     {
         if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
 
-        // TODO: Do additional verification on the packet.
+        // TODO: Make sure position is a reasonable distance away.
+        if (!Enum.IsDefined(typeof(Facing), direction)) return;
+        if ((length < 1) || (length > MaxLength)) return;
 
         var start = new BlockPos(x, y);
         var world = this.GetWorld();
