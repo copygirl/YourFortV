@@ -157,6 +157,15 @@ texture = ExtResource( 10 )
 offset = Vector2( 8, 0 )
 script = ExtResource( 8 )
 Automatic = true
+RateOfFire = 120
+Capacity = 4
+ReloadTime = 2.0
+Knockback = 60.0
+Spread = 3.0
+SpreadIncrease = 10.0
+BulletVelocity = 640
+BulletsPerShot = 16
+BulletOpacity = 0.06
 
 [node name="Tip" type="Node2D" parent="Items/Super Soaker"]
 position = Vector2( 17, 0.5 )

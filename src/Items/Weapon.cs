@@ -66,8 +66,8 @@ public class Weapon : Sprite
 
     public override void _Process(float delta)
     {
-        var spreadDecrease = Mathf.Max(Mathf.Tau / 300, _currentSpreadInc * 2);
-        var recoilDecrease = Mathf.Max(Mathf.Tau / 800, _currentRecoil * 2);
+        var spreadDecrease = Mathf.Max(Mathf.Tau / 200, _currentSpreadInc * 1.5F);
+        var recoilDecrease = Mathf.Max(Mathf.Tau / 600, _currentRecoil * 1.5F);
         _currentSpreadInc = Mathf.Max(0, _currentSpreadInc - spreadDecrease * delta);
         _currentRecoil    = Mathf.Max(0, _currentRecoil    - recoilDecrease * delta);
 

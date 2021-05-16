@@ -3,7 +3,9 @@ using Godot;
 
 public class Bullet : Node2D
 {
-    private static readonly TimeSpan TRAIL_DURATION = TimeSpan.FromSeconds(0.6);
+    private static readonly TimeSpan LIFE_TIME = TimeSpan.FromSeconds(0.6);
+    private static readonly TimeSpan FADE_TIME = TimeSpan.FromSeconds(0.6);
+    private static readonly PackedScene HIT_DECAL = GD.Load<PackedScene>("res://scene/HitDecal.tscn");
 
     public Vector2 Direction { get; }
     public int EffectiveRange { get; }
@@ -12,7 +14,7 @@ public class Bullet : Node2D
     public Color Color { get; }
 
     private readonly Vector2 _startPosition;
-    private TimeSpan _age;
+    private TimeSpan _age = TimeSpan.Zero;
     private float _distance;
 
     public Bullet(Vector2 position, Vector2 direction,
@@ -26,6 +28,16 @@ public class Bullet : Node2D
         Color    = color;
     }
 
+    protected void OnCollide(CollisionObject2D obj, Vector2 hitPosition)
+    {
+        var sprite = obj.GetNodeOrNull<Sprite>("Sprite");
+        if (sprite == null) return;
+
+        var hole  = HIT_DECAL.Init<HitDecal>();
+        var color = new Color(Color, (1 + Color.a) / 2);
+        hole.Add(sprite, hitPosition, color);
+    }
+
     public override void _Ready()
         { if (this.GetGame() is Server) Visible = false; }
 
@@ -33,8 +45,8 @@ public class Bullet : Node2D
     {
         _age += TimeSpan.FromSeconds(delta);
 
-        if (_age > TRAIL_DURATION) {
-            Modulate = new Color(Modulate, Modulate.a - delta * 2);
+        if (_age > LIFE_TIME) {
+            Modulate = new Color(Modulate, Modulate.a - delta / (float)FADE_TIME.TotalSeconds);
             if (Modulate.a <= 0) this.RemoveFromParent();
         }
     }
@@ -50,6 +62,8 @@ public class Bullet : Node2D
         if (collision.Count != 0) {
             Position  = (Vector2)collision["position"];
             _distance = _startPosition.DistanceTo(Position);
+            var obj   = (CollisionObject2D)collision["collider"];
+            OnCollide(obj, Position - obj.Position);
             SetPhysicsProcess(false);
         }
 
