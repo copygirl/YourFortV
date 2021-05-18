@@ -6,6 +6,11 @@
     "files.trimFinalNewlines": true,
     "files.insertFinalNewline": true,
 
+    "files.exclude": {
+        "**/.git": true,
+        "**/*.import": true,
+    },
+
     "[markdown]": {
         "files.trimTrailingWhitespace": false,
     }
