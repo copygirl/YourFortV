@@ -13,6 +13,8 @@ public class World : Node
     public PackedScene BlockScene { get; private set; }
     public PackedScene PlayerScene { get; private set; }
     public PackedScene LocalPlayerScene { get; private set; }
+    private static readonly PackedScene HIT_DECAL = GD.Load<PackedScene>("res://scene/HitDecal.tscn");
+    // TODO: Make all of these static and readonly, hardcode the values..?
 
     public override void _Ready()
     {
@@ -62,6 +64,14 @@ public class World : Node
 
         if (player is LocalPlayer localPlayer)
             this.GetClient().FireLocalPlayerSpawned(localPlayer);
+    }
+
+    [Puppet]
+    public void SpawnHit(NodePath spritePath, Vector2 hitPosition, Color color)
+    {
+        var hit    = HIT_DECAL.Init<HitDecal>();
+        var sprite = this.GetWorld().GetNode<Sprite>(spritePath);
+        hit.Add(sprite, hitPosition, color);
     }
 
     [PuppetSync]

@@ -35,7 +35,7 @@ public class CreativeBuilding : Node2D
 
     public override void _UnhandledInput(InputEvent ev)
     {
-        if (!Visible || !(Player is LocalPlayer)) return;
+        if (!Visible || !(Player is LocalPlayer) || !Player.IsAlive) return;
 
         if (ev.IsActionPressed("interact_primary")) {
             GetTree().SetInputAsHandled();
@@ -52,7 +52,7 @@ public class CreativeBuilding : Node2D
     public override void _Process(float delta)
     {
         if (!(Player is LocalPlayer)) return;
-        if (!Visible) _currentMode = null;
+        if (!Visible || !Player.IsAlive) _currentMode = null;
 
         if (_currentMode == BuildMode.Placing) {
             if (!_canBuild) _currentMode = null;
@@ -88,7 +88,8 @@ public class CreativeBuilding : Node2D
 
     public override void _Draw()
     {
-        if (!Cursor.Visible || EscapeMenu.Instance.Visible) return;
+        if (!(Player is LocalPlayer) || !Cursor.Visible ||
+            EscapeMenu.Instance.Visible) return;
 
         var green = Color.FromHsv(1.0F / 3, 1.0F, 1.0F, 0.4F);
         var red   = Color.FromHsv(0.0F, 1.0F, 1.0F, 0.4F);
@@ -112,6 +113,7 @@ public class CreativeBuilding : Node2D
     private void PlaceLine(int x, int y, Facing direction, int length)
     {
         if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+        if (!Player.IsAlive) return;
 
         // TODO: Make sure position is a reasonable distance away.
         if (!Enum.IsDefined(typeof(Facing), direction)) return;
@@ -133,6 +135,7 @@ public class CreativeBuilding : Node2D
     private void BreakLine(int x, int y, Facing direction, int length)
     {
         if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+        if (!Player.IsAlive) return;
 
         // TODO: Make sure position is a reasonable distance away.
         if (!Enum.IsDefined(typeof(Facing), direction)) return;

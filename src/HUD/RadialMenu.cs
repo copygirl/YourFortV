@@ -4,9 +4,9 @@ using Godot;
 // TODO: Display number of rounds for weapons? Add an even smaller font for this?
 public class RadialMenu : Node2D
 {
+    [Export] public int MinSegments { get; set; } = 8;
     [Export] public int InnerRadius { get; set; } = 32;
     [Export] public int OuterRadius { get; set; } = 64;
-    [Export] public int MinElements { get; set; } = 8;
     [Export] public float Separation { get; set; } = 2F;
 
     public Cursor Cursor { get; private set; }
@@ -18,7 +18,7 @@ public class RadialMenu : Node2D
 
     public override void _Ready()
     {
-        _startAngle = (-Mathf.Tau / 4) - (Mathf.Tau / MinElements / 2);
+        _startAngle = (-Mathf.Tau / 4) - (Mathf.Tau / MinSegments / 2);
 
         Cursor     = this.GetClient()?.Cursor;
         ActiveName = GetNode<Label>("ActiveName");
@@ -29,14 +29,14 @@ public class RadialMenu : Node2D
 
     public override void _UnhandledInput(InputEvent ev)
     {
-        if (GetItems() == null) return;
+        if (this.GetClient().LocalPlayer?.IsAlive != true) return;
+        var items = GetItems();
 
         if (ev.IsActionPressed("interact_select")) {
             Position = this.GetClient().Cursor.ScreenPosition.Round();
             Visible  = true;
             Modulate = Colors.White;
 
-            var items = GetItems();
             _selected = items.Current;
             items.Current = null;
 
@@ -47,7 +47,6 @@ public class RadialMenu : Node2D
 
         if (ev.IsActionPressed("interact_select_dec") || ev.IsActionPressed("interact_select_inc")) {
             var diff  = ev.IsActionPressed("interact_select_inc") ? 1 : -1;
-            var items = GetItems();
             // TODO: Should current item be equipped until radial menu disappears again?
             //       Perhaps for balance reasons?
 
@@ -78,6 +77,7 @@ public class RadialMenu : Node2D
 
     public override void _Process(float delta)
     {
+        if (this.GetClient().LocalPlayer?.IsAlive != true) Visible = false;
         if (!Visible) return;
 
         if (_showUntil != null) {
@@ -91,12 +91,10 @@ public class RadialMenu : Node2D
             return;
         }
 
-        var items = GetItems();
-        if (items == null) return;
-
+        var items  = GetItems();
         var cursor = ToLocal(this.GetClient().Cursor.ScreenPosition);
         var angle  = cursor.Angle() - _startAngle;
-        var index  = (int)((angle / Mathf.Tau + 1) % 1 * MinElements);
+        var index  = (int)((angle / Mathf.Tau + 1) % 1 * MinSegments);
         if ((cursor.Length() > InnerRadius) && (index < items.Count) && (items[index] != _selected)) {
             _selected = items[index];
             ActiveName.Text = _selected?.Name ?? "";
@@ -111,15 +109,13 @@ public class RadialMenu : Node2D
 
     public override void _Draw()
     {
-        var items = GetItems();
-
+        var items    = GetItems();
         var vertices = new Vector2[5];
-        var colors   = new Color[5];
 
-        var numElements = Math.Max(MinElements, items.Count);
-        for (var i = 0; i < numElements; i++) {
-            var angle1 = _startAngle + Mathf.Tau * ( i      / (float)numElements);
-            var angle3 = _startAngle + Mathf.Tau * ((i + 1) / (float)numElements);
+        var numSegments = Math.Max(MinSegments, items.Count);
+        for (var i = 0; i < numSegments; i++) {
+            var angle1 = _startAngle + Mathf.Tau * ( i      / (float)numSegments);
+            var angle3 = _startAngle + Mathf.Tau * ((i + 1) / (float)numSegments);
             var angle2 = (angle1 + angle3) / 2;
 
             var sep1 = Mathf.Polar2Cartesian(Separation, angle1 + Mathf.Tau / 4);
@@ -136,9 +132,7 @@ public class RadialMenu : Node2D
             vertices[4] = Mathf.Polar2Cartesian(innerRadius             , angle3) + sep2;
 
             var color = new Color(0.1F, 0.1F, 0.1F, isSelected ? 0.7F : 0.4F);
-            for (var j = 0; j < colors.Length; j++) colors[j] = color;
-
-            DrawPolygon(vertices, colors, antialiased: true);
+            DrawColoredPolygon(vertices, color, antialiased: true);
 
             if (i < items.Count) {
                 var sprite = (items[i].GetNodeOrNull("Icon") as Sprite) ?? (items[i] as Sprite);

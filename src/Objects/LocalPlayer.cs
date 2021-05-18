@@ -30,7 +30,7 @@ public class LocalPlayer : Player
     {
         var moveDir     = 0.0F;
         var jumpPressed = false;
-        if (!EscapeMenu.Instance.Visible) {
+        if (!EscapeMenu.Instance.Visible && IsAlive) {
             moveDir     = Input.GetActionStrength("move_right") - Input.GetActionStrength("move_left");
             jumpPressed = Input.IsActionJustPressed("move_jump");
         }

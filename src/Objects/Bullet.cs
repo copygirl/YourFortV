@@ -5,12 +5,12 @@ public class Bullet : Node2D
 {
     private static readonly TimeSpan LIFE_TIME = TimeSpan.FromSeconds(0.6);
     private static readonly TimeSpan FADE_TIME = TimeSpan.FromSeconds(0.6);
-    private static readonly PackedScene HIT_DECAL = GD.Load<PackedScene>("res://scene/HitDecal.tscn");
 
     public Vector2 Direction { get; }
     public int EffectiveRange { get; }
     public int MaximumRange { get; }
     public int Velocity { get; }
+    public float Damage { get; }
     public Color Color { get; }
 
     private readonly Vector2 _startPosition;
@@ -18,24 +18,32 @@ public class Bullet : Node2D
     private float _distance;
 
     public Bullet(Vector2 position, Vector2 direction,
-        int effectiveRange, int maximumRange, int velocity, Color color)
+        int effectiveRange, int maximumRange, int velocity,
+        float damage, Color color)
     {
         _startPosition = Position = position;
         Direction      = direction;
         EffectiveRange = effectiveRange;
         MaximumRange   = maximumRange;
         Velocity = velocity;
+        Damage   = damage;
         Color    = color;
     }
 
-    protected void OnCollide(CollisionObject2D obj, Vector2 hitPosition)
+    protected virtual void OnCollide(CollisionObject2D obj, Vector2 hitPosition)
     {
-        var sprite = obj.GetNodeOrNull<Sprite>("Sprite");
-        if (sprite == null) return;
-
-        var hole  = HIT_DECAL.Init<HitDecal>();
+        // TODO: Add a global game setting to specify whether shooter or server announces successful hit.
+        //       For now, server is the most straight-forward. Eventually, support client predictive movement?
+        if (!(this.GetGame() is Server) || !(obj.GetNodeOrNull("Sprite") is Sprite sprite)) return;
+        var world = this.GetWorld();
+        var path  = world.GetPathTo(sprite);
         var color = new Color(Color, (1 + Color.a) / 2);
-        hole.Add(sprite, hitPosition, color);
+        RPC.Reliable(world.SpawnHit, path, hitPosition, color);
+        if (obj is Player player) {
+            var rangeFactor = Math.Min(1.0F, (MaximumRange - _distance) / (MaximumRange - EffectiveRange));
+            player.Health -= Damage * rangeFactor;
+        }
+        // TODO: Also spawn a ghost of the player who was hit so they can see where they got shot?
     }
 
     public override void _Ready()

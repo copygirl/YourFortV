@@ -1,4 +1,5 @@
 using System;
+using System.Security.Cryptography.X509Certificates;
 using Godot;
 
 // TODO: "Click" sound when attempting to fire when not ready, or empty.
@@ -22,6 +23,7 @@ public class Weapon : Sprite
     [Export] public int MaximumRange    { get; set; } = 640;
     [Export] public int BulletVelocity  { get; set; } = 2000;
     [Export] public int BulletsPerShot  { get; set; } = 1;
+    [Export] public float Damage        { get; set; } = 0.0F;
     [Export] public float BulletOpacity { get; set; } = 0.2F;
 
 
@@ -71,7 +73,14 @@ public class Weapon : Sprite
         _currentSpreadInc = Mathf.Max(0, _currentSpreadInc - spreadDecrease * delta);
         _currentRecoil    = Mathf.Max(0, _currentRecoil    - recoilDecrease * delta);
 
-        if (Visible) {
+        if (!Player.IsAlive) {
+            _fireDelay     = 0.0F;
+            _reloading     = null;
+            Rounds         = Capacity;
+            HoldingTrigger = null;
+            // TODO: Technically only needs to be called once.
+            if (Player is LocalPlayer) Update();
+        } else if (Visible) {
             if (HoldingTrigger is TimeSpan holding)
                 HoldingTrigger = holding + TimeSpan.FromSeconds(delta);
 
@@ -152,7 +161,7 @@ public class Weapon : Sprite
     private void SendAimAngle(float value)
     {
         if (this.GetGame() is Server) {
-            if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
+            if ((Player.NetworkID != GetTree().GetRpcSenderId()) || !Player.IsAlive) return;
             if (float.IsNaN(value = Mathf.PosMod(value, Mathf.Tau))) return;
 
             RPC.Unreliable(SendAimAngle, value);
@@ -171,7 +180,8 @@ public class Weapon : Sprite
 
     protected virtual bool FireInternal(float aimDirection, bool toRight, int seed)
     {
-        if (!Visible || _lowered || (_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
+        if (!Visible || _lowered || !Player.IsAlive ||
+            (_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
 
         if (this.GetGame() is Client)
             GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
@@ -184,7 +194,8 @@ public class Weapon : Sprite
             var spread = (Mathf.Deg2Rad(Spread) + _currentSpreadInc) * Mathf.Clamp(random.NextGaussian(0.4F), -1, 1);
             var dir    = Mathf.Polar2Cartesian(1, angle + spread);
             var color  = new Color(Player.Color, BulletOpacity);
-            var bullet = new Bullet(Player.Position + tip, dir, EffectiveRange, MaximumRange, BulletVelocity, color);
+            var bullet = new Bullet(Player.Position + tip, dir, EffectiveRange, MaximumRange,
+                                    BulletVelocity, Damage / BulletsPerShot, color);
             this.GetWorld().AddChild(bullet);
         }
 
@@ -218,7 +229,9 @@ public class Weapon : Sprite
 
     private bool ReloadInternal()
     {
-        if (!Visible || (Rounds >= Capacity) || (_reloading != null)) return false;
+        if (!Visible || !Player.IsAlive ||
+            (Rounds >= Capacity) || (_reloading != null)) return false;
+
         // TODO: Play reload sound.
         _reloading = ReloadTime;
         return true;
@@ -237,7 +250,7 @@ public class Weapon : Sprite
 
     public override void _Draw()
     {
-        if (!(Player is LocalPlayer) || _lowered) return;
+        if (!(Player is LocalPlayer) || !Player.IsAlive || _lowered) return;
         // Draws an "aiming cone" to show where bullets might travel.
 
         var tip   = TipOffset + new Vector2(4, 0);

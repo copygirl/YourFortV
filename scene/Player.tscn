@@ -76,6 +76,7 @@ SpreadIncrease = 1.0
 RecoilMin = 3.0
 RecoilMax = 5.0
 BulletVelocity = 1200
+Damage = 0.22
 
 [node name="Tip" type="Node2D" parent="Items/Revolver"]
 position = Vector2( 15, -2.5 )
@@ -99,6 +100,7 @@ EffectiveRange = 240
 MaximumRange = 360
 BulletVelocity = 1000
 BulletsPerShot = 6
+Damage = 0.6
 BulletOpacity = 0.1
 
 [node name="Tip" type="Node2D" parent="Items/Shotgun"]
@@ -121,6 +123,7 @@ RecoilMax = 8.0
 EffectiveRange = 480
 MaximumRange = 920
 BulletVelocity = 4000
+Damage = 0.8
 BulletOpacity = 0.4
 
 [node name="Tip" type="Node2D" parent="Items/Rifle"]
@@ -143,6 +146,7 @@ Spread = 0.6
 SpreadIncrease = 0.8
 RecoilMin = 1.0
 RecoilMax = 2.5
+Damage = 0.12
 BulletOpacity = 0.15
 
 [node name="Tip" type="Node2D" parent="Items/Assault Rifle"]

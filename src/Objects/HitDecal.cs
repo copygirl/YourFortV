@@ -1,7 +1,6 @@
 using System;
 using Godot;
 
-// TODO: When spawned, add to multiple nearby sprites.
 public class HitDecal : Sprite
 {
     private static readonly TimeSpan LIFE_TIME = TimeSpan.FromSeconds(5.0);
