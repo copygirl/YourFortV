@@ -17,7 +17,7 @@ public class Player : KinematicBody2D, IInitializable
 
     public int NetworkID { get => int.Parse(Name); set => Name = value.ToString(); }
     public string DisplayName { get => DisplayNameLabel.Text; set => DisplayNameLabel.Text = value; }
-    public Color Color { get => Sprite.Modulate; set => Sprite.Modulate = value; }
+    public Color Color { get => Sprite.SelfModulate; set => Sprite.SelfModulate = value; }
 
     public float Health { get; set; } = 1.0F;
     public bool IsAlive => Health > 0.0F;
