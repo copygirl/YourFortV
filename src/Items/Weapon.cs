@@ -1,5 +1,4 @@
 using System;
-using System.Security.Cryptography.X509Certificates;
 using Godot;
 
 // TODO: "Click" sound when attempting to fire when not ready, or empty.
@@ -8,6 +7,8 @@ using Godot;
 
 public class Weapon : Sprite
 {
+    private const float NETWORK_EPSILON = 0.05F;
+
     [Export] public bool Automatic   { get; set; } = false;
     [Export] public int RateOfFire   { get; set; } = 100; // rounds/minute
     [Export] public int Capacity     { get; set; } = 12;
@@ -28,7 +29,7 @@ public class Weapon : Sprite
 
 
     public float _fireDelay;
-    public float? _reloading;
+    public float _reloadDelay;
     public bool _lowered;
 
     private float _currentSpreadInc = 0.0F;
@@ -38,7 +39,9 @@ public class Weapon : Sprite
     public float AimDirection { get; private set; }
     public TimeSpan? HoldingTrigger { get; private set; }
     // TODO: Tell the server when we're pressing/releasing the trigger.
-    public float? ReloadProgress => 1 - _reloading / ReloadTime;
+
+    public bool IsReloading => _reloadDelay > 0.0F;
+    public float ReloadProgress => 1 - _reloadDelay / ReloadTime;
 
 
     public Cursor Cursor { get; private set; }
@@ -74,22 +77,19 @@ public class Weapon : Sprite
         _currentRecoil    = Mathf.Max(0, _currentRecoil    - recoilDecrease * delta);
 
         if (!Player.IsAlive) {
+            // TODO: Do this once when player respawns.
             _fireDelay     = 0.0F;
-            _reloading     = null;
+            _reloadDelay   = 0.0F;
             Rounds         = Capacity;
             HoldingTrigger = null;
-            // TODO: Technically only needs to be called once.
             if (Player is LocalPlayer) Update();
         } else if (Visible) {
             if (HoldingTrigger is TimeSpan holding)
                 HoldingTrigger = holding + TimeSpan.FromSeconds(delta);
 
-            if (_reloading is float reloading) {
-                _reloading = reloading - delta;
-                if (_reloading <= 0) {
-                    Rounds = Capacity;
-                    _reloading = null;
-                }
+            if (IsReloading && ((_reloadDelay -= delta) <= 0)) {
+                _reloadDelay = 0.0F;
+                Rounds = Capacity;
             }
 
             if (_fireDelay > 0) {
@@ -146,7 +146,7 @@ public class Weapon : Sprite
                 Update();
             }
         } else {
-            _reloading = null;
+            _reloadDelay = 0.0F;
         }
 
         var angle = Mathf.PosMod(AimDirection + Mathf.Pi, Mathf.Tau) - Mathf.Pi;
@@ -180,11 +180,18 @@ public class Weapon : Sprite
 
     protected virtual bool FireInternal(float aimDirection, bool toRight, int seed)
     {
-        if (!Visible || _lowered || !Player.IsAlive ||
-            (_reloading != null) || (Rounds <= 0) || (_fireDelay > 0)) return false;
+        var isServer = this.GetGame() is Server;
+        var epsilon  = isServer ? NETWORK_EPSILON : 0.0F;
+        if (!Visible || _lowered || !Player.IsAlive || (_fireDelay > epsilon)) return false;
 
-        if (this.GetGame() is Client)
-            GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
+        if (Rounds <= 0) {
+            if (_reloadDelay <= epsilon) {
+                _reloadDelay += ReloadTime;
+                Rounds = Capacity;
+            } else return false;
+        }
+
+        if (!isServer) GetNodeOrNull<AudioStreamPlayer2D>("Fire")?.Play();
 
         var random = new Random(seed);
         var angle = aimDirection - _currentRecoil * (toRight ? 1 : -1);
@@ -202,7 +209,7 @@ public class Weapon : Sprite
         _currentSpreadInc += Mathf.Deg2Rad(SpreadIncrease);
         _currentRecoil    += Mathf.Deg2Rad(random.NextFloat(RecoilMin, RecoilMax));
 
-        if ((this.GetGame() is Server) || (Player is LocalPlayer)) {
+        if (isServer || (Player is LocalPlayer)) {
             // Do not keep track of fire rate or ammo for other players.
             _fireDelay += 60.0F / RateOfFire;
             Rounds -= 1;
@@ -229,11 +236,10 @@ public class Weapon : Sprite
 
     private bool ReloadInternal()
     {
-        if (!Visible || !Player.IsAlive ||
-            (Rounds >= Capacity) || (_reloading != null)) return false;
+        if (!Visible || !Player.IsAlive || (Rounds >= Capacity) || IsReloading) return false;
 
         // TODO: Play reload sound.
-        _reloading = ReloadTime;
+        _reloadDelay += ReloadTime;
         return true;
     }
 

@@ -33,17 +33,14 @@ public class WeaponInfo : Node2D
 
         if ((weapon != _previousWeapon) ||
             (weapon.Rounds != _previousRounds) ||
-            (weapon.ReloadProgress != null)) {
+            (weapon.ReloadProgress < 1.0F)) {
             _visibleFor = 0.0F;
             Modulate    = Colors.White;
 
             Rounds.Visible = weapon.Capacity > 1;
             Rounds.Text    = $"{weapon.Rounds}/{weapon.Capacity}";
-
-            if (weapon.ReloadProgress is float reloading) {
-                Reloading.Visible = true;
-                Reloading.Value = reloading;
-            } else Reloading.Visible = false;
+            Reloading.Value   = weapon.ReloadProgress;
+            Reloading.Visible = weapon.ReloadProgress < 1.0F;
 
             _previousWeapon = weapon;
             _previousRounds = weapon.Rounds;
