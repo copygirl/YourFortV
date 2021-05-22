@@ -2,8 +2,11 @@ using Godot;
 
 public class Block : StaticBody2D, IInitializable
 {
-    public new BlockPos Position { get => BlockPos.FromVector(base.Position);
-                                   set => base.Position = value.ToVector(); }
+    public const int LENGTH    = 16;
+    public const int BIT_SHIFT = 4;
+
+    public BlockPos GlobalBlockPos { get => BlockPos.FromVector(GlobalPosition); set => GlobalPosition = value.ToVector(); }
+    public BlockPos ChunkLocalBlockPos { get => BlockPos.FromVector(Position); set => Position = value.ToVector(); }
     public Color Color { get => Sprite.SelfModulate; set => Sprite.SelfModulate = value; }
     public bool Unbreakable { get; set; } = false;
 

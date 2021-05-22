@@ -123,7 +123,7 @@ public class EscapeMenuMultiplayer : Container
         if (server.IsRunning) {
             server.Stop();
             server.GetWorld().ClearPlayers();
-            server.GetWorld().ClearBlocks();
+            server.GetWorld().ClearChunks();
             client.Disconnect();
         }
 

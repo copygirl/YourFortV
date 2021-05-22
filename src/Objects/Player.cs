@@ -25,6 +25,8 @@ public class Player : KinematicBody2D, IInitializable
     private float _regenDelay;
     private float _respawnDelay;
 
+    public PlayerVisibilityTracker VisibilityTracker { get; } = new PlayerVisibilityTracker();
+
     public void Initialize()
     {
         DisplayNameLabel = GetNode<Label>(DisplayNamePath);
@@ -43,35 +45,38 @@ public class Player : KinematicBody2D, IInitializable
 
     public override void _Process(float delta)
     {
-        if (this.GetGame() is Server) {
-            if (Position.y > 9000) Health -= 0.01F;
+        if (!(this.GetGame() is Server)) return;
 
-            if (IsAlive && (Health < 1.0F)) {
-                if ((_regenDelay += delta) > (TIME_BEFORE_REGEN + REGEN_TIMER).TotalSeconds) {
-                    _regenDelay -= (float)REGEN_TIMER.TotalSeconds;
-                    Health = Mathf.Min(1.0F, Health + REGEN_AMOUNT);
-                }
-            } else _regenDelay = 0.0F;
+        // Damage player when falling into "the void", so they can respawn.
+        if (Position.y > 9000) Health -= 0.01F;
 
-            if (!IsAlive && ((_respawnDelay += delta) > RESPAWN_TIMER.TotalSeconds)) {
-                // TODO: Move respawning related code to its own method.
-                // Can't use RPC helper method here since player is not a LocalPlayer here.
-                RpcId(NetworkID, nameof(LocalPlayer.ResetPosition), Vector2.Zero);
-                Rset("modulate", Colors.White);
-                Health        = 1.0F;
-                _respawnDelay = 0.0F;
-                // TODO: Add invulnerability timer? Or some other way to prevent "void" damage
-                //       after server considers player respawned, but it hasn't teleported yet.
+        if (IsAlive && (Health < 1.0F)) {
+            if ((_regenDelay += delta) > (TIME_BEFORE_REGEN + REGEN_TIMER).TotalSeconds) {
+                _regenDelay -= (float)REGEN_TIMER.TotalSeconds;
+                Health = Mathf.Min(1.0F, Health + REGEN_AMOUNT);
             }
+        } else _regenDelay = 0.0F;
 
-            if (_previousHealth != Health) {
-                RsetId(NetworkID, nameof(Health), Health);
-                if (Health < _previousHealth) _regenDelay = 0.0F;
-                if ((Health <= 0) && (_previousHealth > 0))
-                    Rset("modulate", new Color(0.35F, 0.35F, 0.35F, 0.8F));
-                _previousHealth = Health;
-            }
+        if (!IsAlive && ((_respawnDelay += delta) > RESPAWN_TIMER.TotalSeconds)) {
+            // TODO: Move respawning related code to its own method.
+            // Can't use RPC helper method here since player is not a LocalPlayer here.
+            RpcId(NetworkID, nameof(LocalPlayer.ResetPosition), Vector2.Zero);
+            Rset("modulate", Colors.White);
+            Health        = 1.0F;
+            _respawnDelay = 0.0F;
+            // TODO: Add invulnerability timer? Or some other way to prevent "void" damage
+            //       after server considers player respawned, but it hasn't teleported yet.
         }
+
+        if (_previousHealth != Health) {
+            RsetId(NetworkID, nameof(Health), Health);
+            if (Health < _previousHealth) _regenDelay = 0.0F;
+            if ((Health <= 0) && (_previousHealth > 0))
+                Rset("modulate", new Color(0.35F, 0.35F, 0.35F, 0.8F));
+            _previousHealth = Health;
+        }
+
+        VisibilityTracker.Process(this);
     }
 
 

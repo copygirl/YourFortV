@@ -93,11 +93,6 @@ public class Server : Game
                     ((Items)player.Items).DoSetCurrent, player.Items.Current.Name);
             }
 
-            foreach (var block in world.Blocks)
-                RPC.Reliable(networkID, world.SpawnBlock,
-                    block.Position.X, block.Position.Y,
-                    block.Color, block.Unbreakable);
-
             RPC.Reliable(world.SpawnPlayer, networkID, Vector2.Zero);
             if (IsSingleplayer) LocalPlayer = world.GetPlayer(networkID);
         }

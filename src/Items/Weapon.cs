@@ -130,15 +130,15 @@ public class Weapon : Sprite
                 // CREDIT to lizzie for helping me figure out this trigonometry problem.
 
                 var a = TipOffset.y * ((Scale.y > 0) ? 1 : -1);
-                var c = Player.Position.DistanceTo(Cursor.Position);
+                var c = Player.GlobalPosition.DistanceTo(Cursor.Position);
                 if (c < TipOffset.x) {
                     // If the cursor is too close to the player, put the
                     // weapon in a "lowered" state, where it can't be shot.
-                    AimDirection = Mathf.Deg2Rad((Cursor.Position.x > Player.Position.x) ? 30 : 150);
+                    AimDirection = Mathf.Deg2Rad((Cursor.Position.x > Player.GlobalPosition.x) ? 30 : 150);
                     _lowered     = true;
                 } else {
                     var angleC   = Mathf.Asin(a / c);
-                    AimDirection = Cursor.Position.AngleToPoint(Player.Position) - angleC;
+                    AimDirection = Cursor.Position.AngleToPoint(Player.GlobalPosition) - angleC;
                     _lowered     = false;
                 }
 
@@ -201,7 +201,7 @@ public class Weapon : Sprite
             var spread = (Mathf.Deg2Rad(Spread) + _currentSpreadInc) * Mathf.Clamp(random.NextGaussian(0.4F), -1, 1);
             var dir    = Mathf.Polar2Cartesian(1, angle + spread);
             var color  = new Color(Player.Color, BulletOpacity);
-            var bullet = new Bullet(Player.Position + tip, dir, EffectiveRange, MaximumRange,
+            var bullet = new Bullet(Player.GlobalPosition + tip, dir, EffectiveRange, MaximumRange,
                                     BulletVelocity, Damage / BulletsPerShot, color);
             this.GetWorld().AddChild(bullet);
         }
@@ -224,6 +224,7 @@ public class Weapon : Sprite
             if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
             if (float.IsNaN(aimDirection = Mathf.PosMod(aimDirection, Mathf.Tau))) return;
 
+            // TODO: Only send to players who can see the full path of the bullet.
             if (FireInternal(aimDirection, toRight, seed))
                 RPC.Reliable(SendFire, aimDirection, toRight, seed);
         } else if (!(Player is LocalPlayer))

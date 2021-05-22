@@ -1,69 +1,90 @@
 using System.Collections.Generic;
-using System.Linq;
 using Godot;
 
 public class World : Node
 {
-    [Export] public NodePath PlayerContainerPath { get; set; }
-    [Export] public NodePath BlockContainerPath { get; set; }
+    private static readonly PackedScene BLOCK        = GD.Load<PackedScene>("res://scene/Block.tscn");
+    private static readonly PackedScene PLAYER       = GD.Load<PackedScene>("res://scene/Player.tscn");
+    private static readonly PackedScene LOCAL_PLAYER = GD.Load<PackedScene>("res://scene/LocalPlayer.tscn");
+    private static readonly PackedScene HIT_DECAL    = GD.Load<PackedScene>("res://scene/HitDecal.tscn");
 
-    public Node PlayerContainer { get; private set; }
-    public Node BlockContainer { get; private set; }
+    internal Node PlayerContainer { get; }
+    internal Node ChunkContainer { get; }
 
-    public PackedScene BlockScene { get; private set; }
-    public PackedScene PlayerScene { get; private set; }
-    public PackedScene LocalPlayerScene { get; private set; }
-    private static readonly PackedScene HIT_DECAL = GD.Load<PackedScene>("res://scene/HitDecal.tscn");
-    // TODO: Make all of these static and readonly, hardcode the values..?
-
-    public override void _Ready()
+    public World()
     {
-        PlayerContainer = GetNode(PlayerContainerPath);
-        BlockContainer  = GetNode(BlockContainerPath);
-
-        BlockScene       = GD.Load<PackedScene>("res://scene/Block.tscn");
-        PlayerScene      = GD.Load<PackedScene>("res://scene/Player.tscn");
-        LocalPlayerScene = GD.Load<PackedScene>("res://scene/LocalPlayer.tscn");
+        AddChild(PlayerContainer = new Node { Name = "Players" });
+        AddChild(ChunkContainer  = new Node { Name = "Chunks" });
     }
 
     public IEnumerable<Player> Players
-        => PlayerContainer.GetChildren().Cast<Player>();
+        => PlayerContainer.GetChildren<Player>();
     public Player GetPlayer(int networkID)
         => PlayerContainer.GetNodeOrNull<Player>(networkID.ToString());
     public void ClearPlayers()
         { foreach (var player in Players) player.RemoveFromParent(); }
 
-    public IEnumerable<Block> Blocks
-        => BlockContainer.GetChildren().Cast<Block>();
+    public IEnumerable<Chunk> Chunks
+        => ChunkContainer.GetChildren<Chunk>();
+    public Chunk GetChunkOrNull((int X, int Y) chunkPos)
+        => ChunkContainer.GetNodeOrNull<Chunk>($"Chunk ({chunkPos.X}, {chunkPos.Y})");
+    public Chunk GetOrCreateChunk((int X, int Y) chunkPos)
+        => ChunkContainer.GetOrCreateChild($"Chunk ({chunkPos.X}, {chunkPos.Y})", () => new Chunk(chunkPos.X, chunkPos.Y));
+    [PuppetSync] public void ClearChunks()
+        { foreach (var chunk in Chunks) chunk.RemoveFromParent(); }
+
+
     public Block GetBlockAt(BlockPos position)
-        => BlockContainer.GetNodeOrNull<Block>(position.ToString());
-    [PuppetSync] public void ClearBlocks()
-        { foreach (var block in Blocks) block.RemoveFromParent(); }
-
-
+        => GetChunkOrNull(position.ToChunkPos())
+            ?.GetLayerOrNull<Block>()?[position.GlobalToChunkRel()];
     [PuppetSync]
     public void SpawnBlock(int x, int y, Color color, bool unbreakable)
     {
-        var position = new BlockPos(x, y);
-        var block    = BlockScene.Init<Block>();
-        block.Name        = position.ToString();
-        block.Position    = position;
+        var blockPos = new BlockPos(x, y);
+        var block    = BLOCK.Init<Block>();
+        block.Name        = blockPos.ToString();
         block.Color       = color;
         block.Unbreakable = unbreakable;
-        BlockContainer.AddChild(block);
+        block.ChunkLocalBlockPos = blockPos.GlobalToChunkRel();
+
+        GetOrCreateChunk(blockPos.ToChunkPos())
+            .GetOrCreateLayer<Block>()[block.ChunkLocalBlockPos] = block;
+    }
+    [PuppetSync]
+    public void DespawnBlock(int x, int y)
+    {
+        var blockPos   = new BlockPos(x, y);
+        var blockLayer = GetChunkOrNull(blockPos.ToChunkPos())?.GetLayerOrNull<Block>();
+        if (blockLayer != null) blockLayer[blockPos.GlobalToChunkRel()] = null;
     }
 
     [PuppetSync]
     public void SpawnPlayer(int networkID, Vector2 position)
     {
         var isLocal = networkID == GetTree().GetNetworkUniqueId();
-        var player  = (isLocal ? LocalPlayerScene : PlayerScene).Init<Player>();
+        var player  = (isLocal ? LOCAL_PLAYER : PLAYER).Init<Player>();
         player.NetworkID = networkID;
         player.Position  = position;
         PlayerContainer.AddChild(player);
 
         if (player is LocalPlayer localPlayer)
             this.GetClient().FireLocalPlayerSpawned(localPlayer);
+
+        if (this.GetGame() is Server) {
+            player.VisibilityTracker.ChunkTracked += (chunkPos) => {
+                var chunk = GetChunkOrNull(chunkPos);
+                if (chunk == null) return;
+                foreach (var block in chunk.GetLayerOrNull<Block>().GetChildren<Block>())
+                    RPC.Reliable(player.NetworkID, SpawnBlock,
+                        block.GlobalBlockPos.X, block.GlobalBlockPos.Y,
+                        block.Color, block.Unbreakable);
+            };
+            player.VisibilityTracker.ChunkUntracked += (chunkPos) => {
+                var chunk = GetChunkOrNull(chunkPos);
+                if (chunk == null) return;
+                RPC.Reliable(player.NetworkID, Despawn, GetPathTo(chunk));
+            };
+        }
     }
 
     [Puppet]

@@ -9,7 +9,7 @@ public class WorldSave
 {
     public const string FILE_EXT    = ".yf5";
     public const int MAGIC_NUMBER   = 0x59463573; // "YF5s"
-    public const int LATEST_VERSION = 0;
+    public const int LATEST_VERSION = 1;
 
     public static readonly string WORLDS_DIR = OS.GetUserDataDir() + "/worlds/";
 
@@ -18,7 +18,7 @@ public class WorldSave
     public int Version { get; private set; } = LATEST_VERSION;
     public TimeSpan Playtime { get; set; } = TimeSpan.Zero;
 
-    public List<(BlockPos, Color, bool)> Blocks { get; private set; }
+    public Dictionary<(int, int), Dictionary<BlockPos, (Color, bool)>> Chunks { get; private set; }
 
 
     public static WorldSave ReadFromFile(string path)
@@ -30,19 +30,34 @@ public class WorldSave
                 if (magic != MAGIC_NUMBER) throw new IOException(
                     $"Magic number does not match ({magic:X8} != {MAGIC_NUMBER:X8})");
 
-                // TODO: See how to support multiple versions.
-                save.Version = reader.ReadUInt16();
-                if (save.Version != LATEST_VERSION) throw new IOException(
-                    $"Version does not match ({save.Version} != {LATEST_VERSION})");
-
+                // TODO: See how to better support multiple versions, improve saving/loading.
+                save.Version  = reader.ReadUInt16();
                 save.Playtime = TimeSpan.FromSeconds(reader.ReadUInt32());
 
-                var numBlocks = reader.ReadInt32();
-                save.Blocks   = new List<(BlockPos, Color, bool)>();
-                for (var i = 0; i < numBlocks; i++)
-                    save.Blocks.Add((new BlockPos(reader.ReadInt32(), reader.ReadInt32()),
-                                     new Color(reader.ReadInt32()),
-                                     reader.ReadBoolean()));
+                if (save.Version == 0) {
+                    save.Chunks   = new Dictionary<(int, int), Dictionary<BlockPos, (Color, bool)>>();
+                    var numBlocks = reader.ReadInt32();
+                    for (var i = 0; i < numBlocks; i++) {
+                        var blockPos  = new BlockPos(reader.ReadInt32(), reader.ReadInt32());
+                        var blockData = (new Color(reader.ReadInt32()), reader.ReadBoolean());
+                        var chunkPos  = blockPos.ToChunkPos();
+                        if (!save.Chunks.TryGetValue(chunkPos, out var blocks))
+                            save.Chunks.Add(chunkPos, blocks = new Dictionary<BlockPos, (Color, bool)>());
+                        blocks.Add(blockPos.GlobalToChunkRel(), blockData);
+                    }
+                } else if (save.Version == 1) {
+                    var numChunks = reader.ReadInt32();
+                    save.Chunks   = new Dictionary<(int, int), Dictionary<BlockPos, (Color, bool)>>(numChunks);
+                    for (var i = 0; i < numChunks; i++) {
+                        var chunkPos  = (reader.ReadInt32(), reader.ReadInt32());
+                        var numBlocks = (int)reader.ReadUInt16();
+                        var blocks    = new Dictionary<BlockPos, (Color, bool)>(numBlocks);
+                        for (var j = 0; j < numBlocks; j++)
+                            blocks.Add(new BlockPos(reader.ReadByte(), reader.ReadByte()),
+                                       (new Color(reader.ReadInt32()), reader.ReadBoolean()));
+                        save.Chunks.Add(chunkPos, blocks);
+                    }
+                } else throw new IOException($"Version {save.Version} not supported (latest version: {LATEST_VERSION})");
             }
         }
         return save;
@@ -56,12 +71,17 @@ public class WorldSave
                 writer.Write((ushort)LATEST_VERSION);
                 writer.Write((uint)Playtime.TotalSeconds);
 
-                writer.Write(Blocks.Count);
-                foreach (var (position, color, unbreakable) in Blocks) {
-                    writer.Write(position.X);
-                    writer.Write(position.Y);
-                    writer.Write(color.ToRgba32());
-                    writer.Write(unbreakable);
+                writer.Write(Chunks.Count);
+                foreach (var ((chunkX, chunkY), blocks) in Chunks) {
+                    writer.Write(chunkX);
+                    writer.Write(chunkY);
+                    writer.Write((ushort)blocks.Count);
+                    foreach (var ((blockX, blockY), (color, unbreakable)) in blocks) {
+                        writer.Write((byte)blockX);
+                        writer.Write((byte)blockY);
+                        writer.Write(color.ToRgba32());
+                        writer.Write(unbreakable);
+                    }
                 }
             }
         }
@@ -71,12 +91,21 @@ public class WorldSave
 
 
     public void WriteDataFromWorld(World world)
-        => Blocks = world.Blocks.Select(block => (block.Position, block.Color, block.Unbreakable)).ToList();
+        => Chunks = world.Chunks.ToDictionary(
+            chunk => chunk.ChunkPosition,
+            chunk => chunk.GetLayerOrNull<Block>()
+                .GetChildren<Block>().ToDictionary(
+                    block => block.ChunkLocalBlockPos,
+                    block => (block.Color, block.Unbreakable)));
 
     public void ReadDataIntoWorld(World world)
     {
-        RPC.Reliable(world.ClearBlocks);
-        foreach (var (position, color, unbreakable) in Blocks)
-            RPC.Reliable(world.SpawnBlock, position.X, position.Y, color, unbreakable);
+        RPC.Reliable(world.ClearChunks);
+        foreach (var (chunkPos, blocks) in Chunks) {
+            foreach (var (blockPos, (color, unbreakable)) in blocks) {
+                var (x, y) = blockPos.ChunkRelToGlobal(chunkPos);
+                world.SpawnBlock(x, y, color, unbreakable);
+            }
+        }
     }
 }

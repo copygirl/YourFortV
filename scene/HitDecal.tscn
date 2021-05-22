@@ -3,16 +3,16 @@
 [ext_resource path="res://gfx/hit_decal.png" type="Texture" id=1]
 [ext_resource path="res://src/Objects/HitDecal.cs" type="Script" id=2]
 
-[sub_resource type="VisualShaderNodeInput" id=15]
+[sub_resource type="VisualShaderNodeInput" id=1]
 input_name = "modulate_color"
 
-[sub_resource type="VisualShaderNodeInput" id=16]
+[sub_resource type="VisualShaderNodeInput" id=2]
 input_name = "modulate_alpha"
 
-[sub_resource type="VisualShaderNodeScalarOp" id=17]
+[sub_resource type="VisualShaderNodeScalarOp" id=3]
 operator = 2
 
-[sub_resource type="VisualShaderNodeExpression" id=18]
+[sub_resource type="VisualShaderNodeExpression" id=4]
 size = Vector2( 512, 260 )
 expression = "vec2 tex_size = vec2(textureSize(mask, 0));
 vec2 pix_loc  = uv.xy / TEXTURE_PIXEL_SIZE;
@@ -20,30 +20,30 @@ mask_uv = vec3((pix_loc + offset.xy) / tex_size, 0);
 outside = mask_uv.x >= 0.0 && mask_uv.x <= 1.0 &&
           mask_uv.y >= 0.0 && mask_uv.y <= 1.0;"
 
-[sub_resource type="VisualShaderNodeInput" id=19]
+[sub_resource type="VisualShaderNodeInput" id=5]
 input_name = "uv"
 
-[sub_resource type="VisualShaderNodeScalarSwitch" id=20]
+[sub_resource type="VisualShaderNodeScalarSwitch" id=6]
 
-[sub_resource type="VisualShaderNodeVectorOp" id=21]
+[sub_resource type="VisualShaderNodeVectorOp" id=7]
 operator = 2
 
-[sub_resource type="VisualShaderNodeTexture" id=22]
+[sub_resource type="VisualShaderNodeTexture" id=8]
 source = 5
 
-[sub_resource type="VisualShaderNodeInput" id=23]
+[sub_resource type="VisualShaderNodeInput" id=9]
 input_name = "texture"
 
-[sub_resource type="VisualShaderNodeScalarOp" id=24]
+[sub_resource type="VisualShaderNodeScalarOp" id=10]
 operator = 2
 
-[sub_resource type="VisualShaderNodeVec3Uniform" id=25]
+[sub_resource type="VisualShaderNodeVec3Uniform" id=11]
 uniform_name = "offset"
 
-[sub_resource type="VisualShaderNodeTextureUniform" id=26]
+[sub_resource type="VisualShaderNodeTextureUniform" id=12]
 uniform_name = "mask"
 
-[sub_resource type="VisualShader" id=27]
+[sub_resource type="VisualShader" id=13]
 code = "shader_type canvas_item;
 uniform vec3 offset;
 uniform sampler2D mask;
@@ -133,27 +133,26 @@ void light() {
 
 }
 "
-graph_offset = Vector2( 341, -275 )
 mode = 1
 flags/light_only = false
 nodes/fragment/0/position = Vector2( 840, -100 )
-nodes/fragment/2/node = SubResource( 22 )
+nodes/fragment/2/node = SubResource( 8 )
 nodes/fragment/2/position = Vector2( 400, -40 )
-nodes/fragment/3/node = SubResource( 23 )
+nodes/fragment/3/node = SubResource( 9 )
 nodes/fragment/3/position = Vector2( 220, -40 )
-nodes/fragment/6/node = SubResource( 24 )
+nodes/fragment/6/node = SubResource( 10 )
 nodes/fragment/6/position = Vector2( 640, 60 )
-nodes/fragment/7/node = SubResource( 25 )
+nodes/fragment/7/node = SubResource( 11 )
 nodes/fragment/7/position = Vector2( -340, 60 )
-nodes/fragment/8/node = SubResource( 26 )
+nodes/fragment/8/node = SubResource( 12 )
 nodes/fragment/8/position = Vector2( 400, 100 )
-nodes/fragment/10/node = SubResource( 15 )
+nodes/fragment/10/node = SubResource( 1 )
 nodes/fragment/10/position = Vector2( 320, -200 )
-nodes/fragment/13/node = SubResource( 16 )
+nodes/fragment/13/node = SubResource( 2 )
 nodes/fragment/13/position = Vector2( 320, -120 )
-nodes/fragment/14/node = SubResource( 17 )
+nodes/fragment/14/node = SubResource( 3 )
 nodes/fragment/14/position = Vector2( 640, -60 )
-nodes/fragment/15/node = SubResource( 18 )
+nodes/fragment/15/node = SubResource( 4 )
 nodes/fragment/15/position = Vector2( -140, 40 )
 nodes/fragment/15/size = Vector2( 512, 260 )
 nodes/fragment/15/input_ports = "0,1,offset;1,1,uv;"
@@ -163,16 +162,16 @@ vec2 pix_loc  = uv.xy / TEXTURE_PIXEL_SIZE;
 mask_uv = vec3((pix_loc + offset.xy) / tex_size, 0);
 outside = mask_uv.x >= 0.0 && mask_uv.x <= 1.0 &&
           mask_uv.y >= 0.0 && mask_uv.y <= 1.0;"
-nodes/fragment/16/node = SubResource( 19 )
+nodes/fragment/16/node = SubResource( 5 )
 nodes/fragment/16/position = Vector2( -340, 140 )
-nodes/fragment/17/node = SubResource( 20 )
+nodes/fragment/17/node = SubResource( 6 )
 nodes/fragment/17/position = Vector2( 620, 180 )
-nodes/fragment/18/node = SubResource( 21 )
+nodes/fragment/18/node = SubResource( 7 )
 nodes/fragment/18/position = Vector2( 640, -180 )
 nodes/fragment/connections = PoolIntArray( 3, 0, 2, 2, 2, 1, 6, 0, 6, 0, 14, 1, 13, 0, 14, 0, 14, 0, 0, 1, 7, 0, 15, 0, 16, 0, 15, 1, 15, 0, 8, 0, 15, 1, 17, 0, 8, 1, 17, 1, 17, 0, 6, 1, 10, 0, 18, 0, 2, 0, 18, 1, 18, 0, 0, 0 )
 
 [sub_resource type="ShaderMaterial" id=14]
-shader = SubResource( 27 )
+shader = SubResource( 13 )
 shader_param/offset = Vector3( 0, 0, 0 )
 
 [node name="HitDecal" type="Sprite"]

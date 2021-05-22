@@ -65,7 +65,7 @@ public class Client : Game
             }
         } else {
             this.GetWorld().ClearPlayers();
-            this.GetWorld().ClearBlocks();
+            this.GetWorld().ClearChunks();
         }
 
         Disconnected?.Invoke();

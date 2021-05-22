@@ -52,7 +52,7 @@ public class Items : Node2D, IItems
     }
 
     public IEnumerator<Node2D> GetEnumerator()
-        => GetChildren().Cast<Node2D>().GetEnumerator();
+        => this.GetChildren<Node2D>().GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 

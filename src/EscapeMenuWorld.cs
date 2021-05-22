@@ -103,10 +103,13 @@ public class EscapeMenuWorld : CenterContainer
         var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer)).Server;
         var save   = WorldSave.ReadFromFile(path);
 
-        // Reset players' positions.
-        foreach (var player in server.GetWorld().Players)
+        foreach (var player in server.GetWorld().Players) {
+            // Reset players' positions.
             // Can't use RPC helper method here since player is not a LocalPlayer here.
             player.RpcId(player.NetworkID, nameof(LocalPlayer.ResetPosition), Vector2.Zero);
+            // Reset the visbility tracker so the client will receive new chunks.
+            player.VisibilityTracker.Reset();
+        }
 
         save.ReadDataIntoWorld(server.GetWorld());
         _playtime = save.Playtime;

@@ -39,14 +39,12 @@ public class CreativeBuilding : Node2D
 
         if (ev.IsActionPressed("interact_primary")) {
             GetTree().SetInputAsHandled();
-            _currentMode = (((_currentMode == null) && _canBuild) ? BuildMode.Placing : (BuildMode?)null);
+            _currentMode = ((_currentMode == null) && _canBuild) ? BuildMode.Placing : (BuildMode?)null;
         }
         if (ev.IsActionPressed("interact_secondary")) {
             GetTree().SetInputAsHandled();
-            _currentMode = ((_currentMode == null) ? BuildMode.Breaking : (BuildMode?)null);
+            _currentMode = (_currentMode == null) ? BuildMode.Breaking : (BuildMode?)null;
         }
-        // NOTE: These ternary operations require extra brackets for some
-        //       reason or else the syntax highlighting in VS Code breaks?!
     }
 
     public override void _Process(float delta)
@@ -106,7 +104,7 @@ public class CreativeBuilding : Node2D
     }
 
     private static IEnumerable<BlockPos> GetBlockPositions(BlockPos start, Facing direction, int length)
-        => Enumerable.Range(0, length + 1).Select(i => start + direction.ToBlockPos() * i);
+        => Enumerable.Range(0, length + 1).Select(i => start.Add(direction, i));
 
 
     [Master]
@@ -127,7 +125,8 @@ public class CreativeBuilding : Node2D
         foreach (var pos in GetBlockPositions(start, direction, length)) {
             if (world.GetBlockAt(pos) != null) continue;
             var color = Player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
-            RPC.Reliable(world.SpawnBlock, pos.X, pos.Y, color, false);
+            RPC.Reliable(world.GetPlayersTracking(pos.ToChunkPos(), true),
+                world.SpawnBlock, pos.X, pos.Y, color, false);
         }
     }
 
@@ -146,7 +145,8 @@ public class CreativeBuilding : Node2D
         foreach (var pos in GetBlockPositions(start, direction, length)) {
             var block = world.GetBlockAt(pos);
             if (block?.Unbreakable != false) continue;
-            RPC.Reliable(world.Despawn, world.GetPathTo(block));
+            RPC.Reliable(world.GetPlayersTracking(pos.ToChunkPos(), true),
+                world.DespawnBlock, pos.X, pos.Y);
         }
     }
 }

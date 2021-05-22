@@ -38,7 +38,8 @@ public class Bullet : Node2D
         var world = this.GetWorld();
         var path  = world.GetPathTo(sprite);
         var color = new Color(Color, (1 + Color.a) / 2);
-        RPC.Reliable(world.SpawnHit, path, hitPosition, color);
+        RPC.Reliable(world.GetPlayersTracking(BlockPos.FromVector(obj.GlobalPosition).ToChunkPos()),
+            world.SpawnHit, path, hitPosition, color);
         if (obj is Player player) {
             var rangeFactor = Math.Min(1.0F, (MaximumRange - _distance) / (MaximumRange - EffectiveRange));
             player.Health -= Damage * rangeFactor;
@@ -71,7 +72,7 @@ public class Bullet : Node2D
             Position  = (Vector2)collision["position"];
             _distance = _startPosition.DistanceTo(Position);
             var obj   = (CollisionObject2D)collision["collider"];
-            OnCollide(obj, Position - obj.Position);
+            OnCollide(obj, Position - obj.GlobalPosition);
             SetPhysicsProcess(false);
         }
 
