@@ -35,7 +35,7 @@ public class CreativeBuilding : Node2D
 
     public override void _UnhandledInput(InputEvent ev)
     {
-        if (!Visible || !(Player is LocalPlayer) || !Player.IsAlive) return;
+        if (!Visible || !Player.IsLocal || !Player.IsAlive) return;
 
         if (ev.IsActionPressed("interact_primary")) {
             GetTree().SetInputAsHandled();
@@ -49,7 +49,7 @@ public class CreativeBuilding : Node2D
 
     public override void _Process(float delta)
     {
-        if (!(Player is LocalPlayer)) return;
+        if (!Player.IsLocal) return;
         if (!Visible || !Player.IsAlive) _currentMode = null;
 
         if (_currentMode == BuildMode.Placing) {
@@ -86,8 +86,7 @@ public class CreativeBuilding : Node2D
 
     public override void _Draw()
     {
-        if (!(Player is LocalPlayer) || !Cursor.Visible ||
-            EscapeMenu.Instance.Visible) return;
+        if (!Player.IsLocal || !Cursor.Visible || EscapeMenu.Instance.Visible) return;
 
         var green = Color.FromHsv(1.0F / 3, 1.0F, 1.0F, 0.4F);
         var red   = Color.FromHsv(0.0F, 1.0F, 1.0F, 0.4F);

@@ -106,7 +106,8 @@ public class EscapeMenuWorld : CenterContainer
         foreach (var player in server.GetWorld().Players) {
             // Reset players' positions.
             // Can't use RPC helper method here since player is not a LocalPlayer here.
-            player.RpcId(player.NetworkID, nameof(LocalPlayer.ResetPosition), Vector2.Zero);
+            player.RsetId(player.NetworkID, "position", Vector2.Zero);
+            player.RsetId(player.NetworkID, nameof(Player.Velocity), Vector2.Zero);
             // Reset the visbility tracker so the client will receive new chunks.
             player.VisibilityTracker.Reset();
         }

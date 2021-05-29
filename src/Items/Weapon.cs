@@ -60,7 +60,7 @@ public class Weapon : Sprite
 
     public override void _UnhandledInput(InputEvent ev)
     {
-        if (!(Player is LocalPlayer)) return;
+        if (!Player.IsLocal) return;
         if (ev.IsActionPressed("interact_primary"))
             { HoldingTrigger = TimeSpan.Zero; OnTriggerPressed(); }
         if (ev.IsActionPressed("interact_reload")) Reload();
@@ -82,7 +82,7 @@ public class Weapon : Sprite
             _reloadDelay   = 0.0F;
             Rounds         = Capacity;
             HoldingTrigger = null;
-            if (Player is LocalPlayer) Update();
+            if (Player.IsLocal) Update();
         } else if (Visible) {
             if (HoldingTrigger is TimeSpan holding)
                 HoldingTrigger = holding + TimeSpan.FromSeconds(delta);
@@ -101,7 +101,7 @@ public class Weapon : Sprite
                     _fireDelay = 0;
             }
 
-            if (Player is LocalPlayer) {
+            if (Player.IsLocal) {
                 // Automatically reload when out of rounds.
                 if (Rounds <= 0) Reload();
 
@@ -165,7 +165,7 @@ public class Weapon : Sprite
             if (float.IsNaN(value = Mathf.PosMod(value, Mathf.Tau))) return;
 
             RPC.Unreliable(SendAimAngle, value);
-        } else if (!(Player is LocalPlayer))
+        } else if (!Player.IsLocal)
             AimDirection = value;
     }
 
@@ -175,7 +175,7 @@ public class Weapon : Sprite
         var seed = unchecked((int)GD.Randi());
         if (!FireInternal(AimDirection, Scale.y > 0, seed)) return;
         RPC.Reliable(1, SendFire, AimDirection, Scale.y > 0, seed);
-        ((LocalPlayer)Player).Velocity -= Mathf.Polar2Cartesian(Knockback, Rotation);
+        Player.Velocity -= Mathf.Polar2Cartesian(Knockback, Rotation);
     }
 
     protected virtual bool FireInternal(float aimDirection, bool toRight, int seed)
@@ -209,7 +209,7 @@ public class Weapon : Sprite
         _currentSpreadInc += Mathf.Deg2Rad(SpreadIncrease);
         _currentRecoil    += Mathf.Deg2Rad(random.NextFloat(RecoilMin, RecoilMax));
 
-        if (isServer || (Player is LocalPlayer)) {
+        if (isServer || Player.IsLocal) {
             // Do not keep track of fire rate or ammo for other players.
             _fireDelay += 60.0F / RateOfFire;
             Rounds -= 1;
@@ -227,7 +227,7 @@ public class Weapon : Sprite
             // TODO: Only send to players who can see the full path of the bullet.
             if (FireInternal(aimDirection, toRight, seed))
                 RPC.Reliable(SendFire, aimDirection, toRight, seed);
-        } else if (!(Player is LocalPlayer))
+        } else if (!Player.IsLocal)
             FireInternal(aimDirection, toRight, seed);
     }
 
@@ -250,14 +250,14 @@ public class Weapon : Sprite
         if (this.GetGame() is Server) {
             if (Player.NetworkID != GetTree().GetRpcSenderId()) return;
             if (ReloadInternal()) RPC.Reliable(SendReload);
-        } else if (!(Player is LocalPlayer))
+        } else if (!Player.IsLocal)
             ReloadInternal();
     }
 
 
     public override void _Draw()
     {
-        if (!(Player is LocalPlayer) || !Player.IsAlive || _lowered) return;
+        if (!Player.IsLocal || !Player.IsAlive || _lowered) return;
         // Draws an "aiming cone" to show where bullets might travel.
 
         var tip   = TipOffset + new Vector2(4, 0);

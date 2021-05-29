@@ -12,15 +12,15 @@ public class Client : Game
 
     public NetworkedMultiplayerENet Peer => (NetworkedMultiplayerENet)Multiplayer.NetworkPeer;
     public ConnectionStatus Status => Peer?.GetConnectionStatus() ?? ConnectionStatus.Disconnected;
-    public LocalPlayer LocalPlayer => (LocalPlayer)this.GetWorld().GetPlayer(GetTree().GetNetworkUniqueId());
-    private LocalPlayer _storedLocalPlayer;
+    public Player LocalPlayer => this.GetWorld().GetPlayer(GetTree().GetNetworkUniqueId());
+    private Player _storedLocalPlayer;
 
     public event Action Connected;
     public event Action Disconnected;
-    public event Action<LocalPlayer> LocalPlayerSpawned;
+    public event Action<Player> LocalPlayerSpawned;
     public event Action<ConnectionStatus> StatusChanged;
 
-    internal void FireLocalPlayerSpawned(LocalPlayer player)
+    internal void FireLocalPlayerSpawned(Player player)
         => LocalPlayerSpawned?.Invoke(player);
 
 
@@ -57,9 +57,9 @@ public class Client : Game
         if (IntegratedServer.Server.IsRunning) {
             foreach (var player in this.GetWorld().Players) {
                 // Store the local player for later restoration, but remove it from the scene.
-                if (player is LocalPlayer localPlayer) {
-                    _storedLocalPlayer = localPlayer;
-                    localPlayer.GetParent().RemoveChild(localPlayer);
+                if (player.IsLocal) {
+                    _storedLocalPlayer = player;
+                    player.GetParent().RemoveChild(player);
                     // Do NOT call QueueFree - like RemoveFromParent does.
                 } else player.RemoveFromParent();
             }

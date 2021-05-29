@@ -16,8 +16,11 @@ public class Player : KinematicBody2D, IInitializable
     public IItems Items { get; private set; }
 
     public int NetworkID { get => int.Parse(Name); set => Name = value.ToString(); }
+    public bool IsLocal => NetworkID == GetTree().GetNetworkUniqueId();
     public string DisplayName { get => DisplayNameLabel.Text; set => DisplayNameLabel.Text = value; }
     public Color Color { get => Sprite.SelfModulate; set => Sprite.SelfModulate = value; }
+
+    public Vector2 Velocity { get; set; }
 
     public float Health { get; set; } = 1.0F;
     public bool IsAlive => Health > 0.0F;
@@ -37,6 +40,7 @@ public class Player : KinematicBody2D, IInitializable
         RsetConfig("modulate", MultiplayerAPI.RPCMode.Puppetsync);
         RsetConfig(nameof(DisplayName), MultiplayerAPI.RPCMode.Puppetsync);
         RsetConfig(nameof(Color), MultiplayerAPI.RPCMode.Puppetsync);
+        RsetConfig(nameof(Velocity), MultiplayerAPI.RPCMode.Puppet);
         RsetConfig(nameof(Health), MultiplayerAPI.RPCMode.Puppet);
     }
 
@@ -59,8 +63,8 @@ public class Player : KinematicBody2D, IInitializable
 
         if (!IsAlive && ((_respawnDelay += delta) > RESPAWN_TIMER.TotalSeconds)) {
             // TODO: Move respawning related code to its own method.
-            // Can't use RPC helper method here since player is not a LocalPlayer here.
-            RpcId(NetworkID, nameof(LocalPlayer.ResetPosition), Vector2.Zero);
+            RsetId(NetworkID, "position", Vector2.Zero);
+            RsetId(NetworkID, nameof(Velocity), Vector2.Zero);
             Rset("modulate", Colors.White);
             Health        = 1.0F;
             _respawnDelay = 0.0F;

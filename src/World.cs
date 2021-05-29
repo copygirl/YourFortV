@@ -61,14 +61,16 @@ public class World : Node
     [PuppetSync]
     public void SpawnPlayer(int networkID, Vector2 position)
     {
-        var isLocal = networkID == GetTree().GetNetworkUniqueId();
-        var player  = (isLocal ? LOCAL_PLAYER : PLAYER).Init<Player>();
+        var player = SceneCache<Player>.Instance();
         player.NetworkID = networkID;
         player.Position  = position;
         PlayerContainer.AddChild(player);
 
-        if (player is LocalPlayer localPlayer)
-            this.GetClient().FireLocalPlayerSpawned(localPlayer);
+        if (player.IsLocal) {
+            player.AddChild(new PlayerMovement { Name = "PlayerMovement" });
+            player.AddChild(new Camera2D { Name = "Camera", Current = true });
+            this.GetClient().FireLocalPlayerSpawned(player);
+        }
 
         if (this.GetGame() is Server) {
             player.VisibilityTracker.ChunkTracked += (chunkPos) => {
