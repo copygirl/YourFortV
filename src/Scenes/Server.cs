@@ -106,6 +106,6 @@ public class Server : Game
         // Local player stays around for reconnecting.
         if (LocalPlayer == player) return;
 
-        RPC.Reliable(world.Despawn, world.GetPathTo(player));
+        RPC.Reliable(world.Despawn, world.GetPathTo(player), true);
     }
 }

@@ -5,14 +5,6 @@ using Godot;
 
 public static class Extensions
 {
-    public static T Init<T>(this PackedScene scene)
-        where T : Node
-    {
-        var node = scene.Instance<T>();
-        (node as IInitializable)?.Initialize();
-        return node;
-    }
-
     public static Game GetGame(this Node node)
         => node.GetTree().Root.GetChild<Game>(0);
     public static Client GetClient(this Node node)
@@ -56,9 +48,4 @@ public static class Extensions
 
     public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> kvp, out TKey key, out TValue value)
         { key = kvp.Key; value = kvp.Value; }
-}
-
-public interface IInitializable
-{
-    void Initialize();
 }

@@ -78,7 +78,7 @@ public class CreativeBuilding : Node2D
         }
 
         var world = this.GetWorld();
-        bool IsBlockAt(BlockPos pos) => world.GetBlockAt(pos) != null;
+        bool IsBlockAt(BlockPos pos) => world.GetBlockDataAt(pos).Block != null;
         _canBuild = !IsBlockAt(_startPos) && Facings.All.Any(pos => IsBlockAt(_startPos + pos.ToBlockPos()));
 
         Update(); // Make sure _Draw is being called.
@@ -94,7 +94,7 @@ public class CreativeBuilding : Node2D
 
         var world = this.GetWorld();
         foreach (var pos in GetBlockPositions(_startPos, _direction, _length)) {
-            var hasBlock = world.GetBlockAt(pos) != null;
+            var hasBlock = world.GetBlockDataAt(pos).Block != null;
             var color    = (_currentMode != BuildMode.Breaking)
                 ? ((_canBuild && !hasBlock) ? green : red)
                 : (hasBlock ? black : red);
@@ -122,10 +122,10 @@ public class CreativeBuilding : Node2D
         var start = new BlockPos(x, y);
         var world = this.GetWorld();
         foreach (var pos in GetBlockPositions(start, direction, length)) {
-            if (world.GetBlockAt(pos) != null) continue;
+            if (world.GetBlockDataAt(pos).Block != null) continue;
             var color = Player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
             RPC.Reliable(world.GetPlayersTracking(pos.ToChunkPos(), true),
-                world.SpawnBlock, pos.X, pos.Y, color, false);
+                world.SetBlockData, pos.X, pos.Y, color.ToRgba32());
         }
     }
 
@@ -142,10 +142,10 @@ public class CreativeBuilding : Node2D
         var start = new BlockPos(x, y);
         var world = this.GetWorld();
         foreach (var pos in GetBlockPositions(start, direction, length)) {
-            var block = world.GetBlockAt(pos);
-            if (block?.Unbreakable != false) continue;
+            var data = world.GetBlockDataAt(pos);
+            if (data.Block == null) continue;
             RPC.Reliable(world.GetPlayersTracking(pos.ToChunkPos(), true),
-                world.DespawnBlock, pos.X, pos.Y);
+                world.SetBlockData, pos.X, pos.Y, 0);
         }
     }
 }

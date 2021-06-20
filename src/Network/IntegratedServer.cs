@@ -12,17 +12,10 @@ public class IntegratedServer : Node
         _sceneTree.Root.RenderTargetUpdateMode = Godot.Viewport.UpdateMode.Disabled;
         // VisualServer.ViewportSetActive(_sceneTree.Root.GetViewportRid(), false);
 
-        var scene = GD.Load<PackedScene>("res://scene/ServerScene.tscn").Init<Server>();
+        var scene = GD.Load<PackedScene>("res://scene/ServerScene.tscn").Instance<Server>();
         _sceneTree.Root.AddChild(scene, true);
         _sceneTree.CurrentScene = scene;
         Server = _sceneTree.Root.GetChild<Server>(0);
-
-        // Spawn default blocks.
-        var world = Server.GetWorld();
-        for (var x = -6; x <= 6; x++) {
-            var color = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
-            world.SpawnBlock(x, 3, color, true);
-        }
 
         var port = Server.StartSingleplayer();
         this.GetClient().Connect("127.0.0.1", port);
