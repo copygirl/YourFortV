@@ -76,7 +76,7 @@ public class Server : Game
 
         if ((LocalPlayer != null) && !_isLocalPlayerConnected &&
             (Peer.GetPeerAddress(networkID) == "127.0.0.1")) {
-            LocalPlayer.NetworkID   = networkID;
+            LocalPlayer.SetNetworkID(false, networkID);
             _isLocalPlayerConnected = true;
         } else {
             var world = this.GetWorld();

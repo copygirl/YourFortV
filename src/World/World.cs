@@ -89,12 +89,13 @@ public class World : Node
     [PuppetSync]
     public void SpawnPlayer(int networkID, Vector2 position)
     {
-        var player = SceneCache<Player>.Instance();
-        player.NetworkID = networkID;
+        var player  = SceneCache<Player>.Instance();
+        var isLocal = networkID == GetTree().GetNetworkUniqueId();
+        player.SetNetworkID(isLocal, networkID);
         player.Position  = position;
         PlayerContainer.AddChild(player);
 
-        if (player.IsLocal) {
+        if (isLocal) {
             player.AddChild(new PlayerMovement { Name = "PlayerMovement" });
             player.AddChild(new Camera2D { Name = "Camera", Current = true });
             this.GetClient().FireLocalPlayerSpawned(player);

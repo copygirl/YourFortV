@@ -76,7 +76,7 @@ public class Client : Game
     {
         if ((IntegratedServer.Server.IsRunning == true) && (_storedLocalPlayer != null)) {
             this.GetWorld().PlayerContainer.AddChild(_storedLocalPlayer);
-            _storedLocalPlayer.NetworkID = GetTree().GetNetworkUniqueId();
+            _storedLocalPlayer.SetNetworkID(true, GetTree().GetNetworkUniqueId());
             _storedLocalPlayer = null;
         }
 

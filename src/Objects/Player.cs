@@ -15,8 +15,8 @@ public class Player : KinematicBody2D, IInitializable
     public Sprite Sprite { get; private set; }
     public IItems Items { get; private set; }
 
-    public int NetworkID { get => int.Parse(Name); set => Name = value.ToString(); }
-    public bool IsLocal => NetworkID == GetTree().GetNetworkUniqueId();
+    public bool IsLocal { get; private set; }
+    public int NetworkID { get; private set; }
     public string DisplayName { get => DisplayNameLabel.Text; set => DisplayNameLabel.Text = value; }
     public Color Color { get => Sprite.SelfModulate; set => Sprite.SelfModulate = value; }
 
@@ -42,6 +42,13 @@ public class Player : KinematicBody2D, IInitializable
         RsetConfig(nameof(Color), MultiplayerAPI.RPCMode.Puppetsync);
         RsetConfig(nameof(Velocity), MultiplayerAPI.RPCMode.Puppet);
         RsetConfig(nameof(Health), MultiplayerAPI.RPCMode.Puppet);
+    }
+
+    internal void SetNetworkID(bool isLocal, int networkID)
+    {
+        IsLocal   = isLocal;
+        NetworkID = networkID;
+        Name      = networkID.ToString();
     }
 
     public override void _Ready()
