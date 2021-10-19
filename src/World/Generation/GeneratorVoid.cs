@@ -10,14 +10,20 @@ public class GeneratorVoid : IWorldGenerator
     {
         // TODO: Make it easier to create "structures" that cover multiple chunks.
         // TODO: These are supposed to be unbreakable.
-        if (chunk.ChunkPosition == (-1, 0)) {
-            var blocks = chunk.GetOrCreateLayer<BlockLayer>();
-            for (var x = Chunk.LENGTH - 6; x < Chunk.LENGTH; x++)
-                blocks[x, 3] = new BlockData(Block.DEFAULT, Color.FromHsv(GD.Randf(), 0.1F, 1.0F));
-        } else if (chunk.ChunkPosition == (0, 0)) {
-            var blocks = chunk.GetOrCreateLayer<BlockLayer>();
-            for (var x = 0; x <= 6; x++)
-                blocks[x, 3] = new BlockData(Block.DEFAULT, Color.FromHsv(GD.Randf(), 0.1F, 1.0F));
+        if (chunk.ChunkPos == (-1, 0)) {
+            var blocks = chunk.GetLayer<Block>(true);
+            var colors = chunk.GetLayer<Color>(false);
+            for (var x = Chunk.LENGTH - 6; x < Chunk.LENGTH; x++) {
+                blocks[x, 3] = Blocks.DEFAULT;
+                colors[x, 3] = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
+            }
+        } else if (chunk.ChunkPos == (0, 0)) {
+            var blocks = chunk.GetLayer<Block>(true);
+            var colors = chunk.GetLayer<Color>(false);
+            for (var x = 0; x <= 6; x++) {
+                blocks[x, 3] = Blocks.DEFAULT;
+                colors[x, 3] = Color.FromHsv(GD.Randf(), 0.1F, 1.0F);
+            }
         }
     }
 }

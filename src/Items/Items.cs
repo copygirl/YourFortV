@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Godot;
 
 // TODO: Add ways to add/move/remove items, including event when changed.

@@ -2,4 +2,9 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+      <PackageReference Include="MessagePack" Version="2.3.75" />
+      <PackageReference Include="Nerdbank.Streams" Version="2.8.46" />
+  </ItemGroup>
 </Project>

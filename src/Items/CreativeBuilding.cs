@@ -78,7 +78,7 @@ public class CreativeBuilding : Node2D
         }
 
         var world = this.GetWorld();
-        bool IsBlockAt(BlockPos pos) => world.GetBlockDataAt(pos).Block != null;
+        bool IsBlockAt(BlockPos pos) => world[pos].Get<Block>() != Blocks.AIR;
         _canBuild = !IsBlockAt(_startPos) && Facings.All.Any(pos => IsBlockAt(_startPos + pos.ToBlockPos()));
 
         Update(); // Make sure _Draw is being called.
@@ -94,10 +94,10 @@ public class CreativeBuilding : Node2D
 
         var world = this.GetWorld();
         foreach (var pos in GetBlockPositions(_startPos, _direction, _length)) {
-            var hasBlock = world.GetBlockDataAt(pos).Block != null;
-            var color    = (_currentMode != BuildMode.Breaking)
-                ? ((_canBuild && !hasBlock) ? green : red)
-                : (hasBlock ? black : red);
+            var isReplacable = world[pos].Get<Block>().IsReplacable;
+            var color = (_currentMode != BuildMode.Breaking)
+                ? ((_canBuild && isReplacable) ? green : red)
+                : (!isReplacable ? black : red);
             DrawTexture(_blockTex, ToLocal(pos.ToVector() - _blockTex.GetSize() / 2), color);
         }
     }
@@ -122,10 +122,10 @@ public class CreativeBuilding : Node2D
         var start = new BlockPos(x, y);
         var world = this.GetWorld();
         foreach (var pos in GetBlockPositions(start, direction, length)) {
-            if (world.GetBlockDataAt(pos).Block != null) continue;
+            if (!world[pos].Get<Block>().IsReplacable) continue;
             var color = Player.Color.Blend(Color.FromHsv(0.0F, 0.0F, GD.Randf(), 0.2F));
             RPC.Reliable(world.GetPlayersTracking(pos.ToChunkPos(), true),
-                world.SetBlockData, pos.X, pos.Y, color.ToRgba32());
+                world.SetBlock, pos.X, pos.Y, color.ToRgba32());
         }
     }
 
@@ -141,11 +141,9 @@ public class CreativeBuilding : Node2D
 
         var start = new BlockPos(x, y);
         var world = this.GetWorld();
-        foreach (var pos in GetBlockPositions(start, direction, length)) {
-            var data = world.GetBlockDataAt(pos);
-            if (data.Block == null) continue;
-            RPC.Reliable(world.GetPlayersTracking(pos.ToChunkPos(), true),
-                world.SetBlockData, pos.X, pos.Y, 0);
-        }
+        foreach (var pos in GetBlockPositions(start, direction, length))
+            if (world[pos].Get<Block>() != Blocks.AIR)
+                RPC.Reliable(world.GetPlayersTracking(pos.ToChunkPos(), true),
+                    world.SetBlock, pos.X, pos.Y, 0);
     }
 }

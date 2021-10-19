@@ -1,113 +1,190 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
+using System.Reflection;
 using Godot;
+using MessagePack;
+using Expression = System.Linq.Expressions.Expression;
 
-public interface IChunkLayer
+[Union(0, typeof(BlockLayer))]
+[Union(1, typeof(ColorLayer))]
+public interface IChunkLayer : IDeSerializable
 {
+    Type AccessType { get; }
     bool IsDefault { get; }
-    void Read(BinaryReader reader);
-    void Write(BinaryWriter writer);
+    event Action<IChunkLayer> Changed;
 }
 
 public interface IChunkLayer<T> : IChunkLayer
 {
     T this[BlockPos pos] { get; set; }
     T this[int x, int y] { get; set; }
+    T this[int index] { get; set; }
+}
+
+public class ArrayChunkLayer<T> : IChunkLayer<T>
+{
+    private static readonly IEqualityComparer<T> COMPARER = EqualityComparer<T>.Default;
+
+    private T[] _data = new T[Chunk.LENGTH * Chunk.LENGTH];
+    public int NonDefaultCount { get; protected set; } = 0;
+
+    public Type AccessType => typeof(T);
+    public bool IsDefault  => NonDefaultCount == 0;
+
+    public event Action<IChunkLayer> Changed;
+
+    public T this[BlockPos pos] {
+        get => this[Chunk.GetIndex(pos)];
+        set => this[Chunk.GetIndex(pos)] = value;
+    }
+    public T this[int x, int y] {
+        get => this[Chunk.GetIndex(x, y)];
+        set => this[Chunk.GetIndex(x, y)] = value;
+    }
+    public T this[int index] {
+        get => _data[index];
+        set {
+            var previous = _data[index];
+            if (COMPARER.Equals(value, previous)) return;
+            _data[index] = value;
+
+            if (!COMPARER.Equals(previous, default)) NonDefaultCount--;
+            if (!COMPARER.Equals(value, default)) NonDefaultCount++;
+            Changed?.Invoke(this);
+        }
+    }
+
+    public void Serialize(ref MessagePackWriter writer, MessagePackSerializerOptions options)
+    {
+        writer.Write(NonDefaultCount);
+        MessagePackSerializer.Serialize(ref writer, _data);
+    }
+    public void Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+    {
+        NonDefaultCount = reader.ReadInt32();
+        _data = MessagePackSerializer.Deserialize<T[]>(ref reader);
+    }
+}
+
+public class TranslationLayer<TData, TAccess> : IChunkLayer<TAccess>
+{
+    private readonly ArrayChunkLayer<TData> _data = new ArrayChunkLayer<TData>();
+    private readonly Func<TData, TAccess> _from;
+    private readonly Func<TAccess, TData> _to;
+
+    public TranslationLayer(Func<TData, TAccess> from, Func<TAccess, TData> to)
+        { _from = from; _to = to; }
+
+    public Type AccessType => typeof(TAccess);
+    public bool IsDefault  => _data.IsDefault;
+    public event Action<IChunkLayer> Changed { add => _data.Changed += value; remove => _data.Changed -= value; }
+    public TAccess this[BlockPos pos] { get => _from(_data[pos]); set => _data[pos] = _to(value); }
+    public TAccess this[int x, int y] { get => _from(_data[x, y]); set => _data[x, y] = _to(value); }
+    public TAccess this[int index] { get => _from(_data[index]); set => _data[index] = _to(value); }
+
+    public void Serialize(ref MessagePackWriter writer, MessagePackSerializerOptions options)
+        => _data.Serialize(ref writer, options);
+    public void Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+        => _data.Deserialize(ref reader, options);
+}
+
+[MessagePackFormatter(typeof(DeSerializableFormatter<BlockLayer>))]
+public class BlockLayer : TranslationLayer<byte, Block>
+{
+    public static readonly Block DEFAULT = Blocks.AIR;
+    public BlockLayer() : base(i => BlockRegistry.Get(i), b => (byte)b.ID) {  }
+}
+
+[MessagePackFormatter(typeof(DeSerializableFormatter<ColorLayer>))]
+public class ColorLayer : TranslationLayer<int, Color>
+{
+    public static readonly Color DEFAULT = Colors.White;
+    public ColorLayer() : base(i => new Color(i), c => c.ToRgba32()) {  }
 }
 
 
 public static class ChunkLayerRegistry
 {
-    private static readonly Dictionary<string, Type> _types = new Dictionary<string, Type>();
+    private static readonly Dictionary<Type, Func<IChunkLayer>> _factories
+        = new Dictionary<Type, Func<IChunkLayer>>();
+    private static readonly Dictionary<Type, object> _defaults
+        = new Dictionary<Type, object>();
 
     static ChunkLayerRegistry()
-        => Register<BlockLayer>();
-
-    public static void Register<T>()
-        where T : Node2D, IChunkLayer
-            => _types.Add(typeof(T).Name, typeof(T));
-
-    public static IChunkLayer Create(string name)
     {
-        var layer = (IChunkLayer)Activator.CreateInstance(_types[name]);
-        ((Node)layer).Name = name;
-        return layer;
-    }
-}
-
-public static class ChunkLayerExtensions
-{
-    public static void FromBytes(this IChunkLayer layer, byte[] data)
-    {
-        using (var stream = new MemoryStream(data))
-            layer.Read(stream);
-    }
-    public static void Read(this IChunkLayer layer, Stream stream)
-    {
-        using (var reader = new BinaryReader(stream))
-            layer.Read(reader);
-    }
-
-    public static byte[] ToBytes(this IChunkLayer layer)
-    {
-        using (var stream = new MemoryStream()) {
-            layer.Write(stream);
-            return stream.ToArray();
-        }
-    }
-    public static void Write(this IChunkLayer layer, Stream stream)
-    {
-        using (var writer = new BinaryWriter(stream))
-            layer.Write(writer);
-    }
-}
-
-
-public abstract class BasicChunkLayer<T> : Node2D, IChunkLayer<T>
-{
-    private static readonly IEqualityComparer<T> COMPARER = EqualityComparer<T>.Default;
-
-    protected T[] Data { get; } = new T[Chunk.LENGTH * Chunk.LENGTH];
-    protected bool Dirty { get; set; } = true;
-
-    public Chunk Chunk => GetParent<Chunk>();
-    public int NonDefaultCount { get; protected set; } = 0;
-    public bool IsDefault => NonDefaultCount == 0;
-
-    public T this[BlockPos pos] {
-        get => this[pos.X, pos.Y];
-        set => this[pos.X, pos.Y] = value;
-    }
-    public T this[int x, int y] {
-        get {
-            EnsureWithin(x, y);
-            return Data[x | y << Chunk.BIT_SHIFT];
-        }
-        set {
-            EnsureWithin(x, y);
-            var index = x | y << Chunk.BIT_SHIFT;
-            var previous = Data[index];
-            if (COMPARER.Equals(value, previous)) return;
-            if (!COMPARER.Equals(previous, default)) {
-                if (previous is Node node) RemoveChild(node);
-                NonDefaultCount--;
-            }
-            if (!COMPARER.Equals(value, default)) {
-                if (value is Node node) AddChild(node);
-                NonDefaultCount++;
-            }
-            Data[index] = value;
-            Dirty = true;
+        foreach (var attr in typeof(IChunkLayer).GetCustomAttributes<UnionAttribute>()) {
+            var id   = (byte)attr.Key;
+            var type = attr.SubType;
+            var ctor = type.GetConstructor(Type.EmptyTypes);
+            var fact = Expression.Lambda<Func<IChunkLayer>>(Expression.New(ctor));
+            var storedType = type.GetInterfaces()
+                .Single(i => i.IsGenericType && (i.GetGenericTypeDefinition() == typeof(IChunkLayer<>)))
+                .GenericTypeArguments[0];
+            _factories.Add(storedType, fact.Compile());
+            _defaults.Add(storedType, type.GetField("DEFAULT").GetValue(null));
         }
     }
 
-    private static void EnsureWithin(int x, int y)
+    public static bool Has<T>()
+        => _factories.ContainsKey(typeof(T));
+
+    public static bool TryGetDefault<T>(out T @default)
     {
-        if ((x < 0) || (x >= Chunk.LENGTH) || (y < 0) || (y >= Chunk.LENGTH)) throw new ArgumentException(
-            $"x and y ({x},{y}) must be within chunk boundaries - (0,0) inclusive to ({Chunk.LENGTH},{Chunk.LENGTH}) exclusive");
+        if (_defaults.TryGetValue(typeof(T), out var defaultObj))
+            { @default = (T)defaultObj; return true; }
+        else { @default = default; return false; }
     }
 
-    public abstract void Read(BinaryReader reader);
-    public abstract void Write(BinaryWriter writer);
+    public static IChunkLayer<T> Create<T>()
+        => (IChunkLayer<T>)Create(typeof(T));
+    public static IChunkLayer Create(Type type)
+        => _factories[type]();
+
+
+    // static ChunkLayerRegistry()
+    // {
+    //     Register(0, Blocks.AIR, () => new BlockLayer());
+    //     Register(1, Colors.White, () => new ColorLayer());
+    // }
+
+    // public static void Register<T>(byte id, T @default, Func<IChunkLayer<T>> factory)
+    // {
+    //     var info = new Info<T>(id, @default, factory);
+    //     _byType.Add(typeof(T), info);
+    //     _byID.Add(id, info);
+    // }
+
+    // public interface IInfo
+    // {
+    //     Type Type { get; }
+    //     byte ID { get; }
+    //     object Default { get; }
+    //     Func<IChunkLayer> Factory { get; }
+    // }
+
+    // public class Info<T> : IInfo
+    // {
+    //     public byte ID { get; }
+    //     public T Default { get; }
+    //     public Func<IChunkLayer<T>> Factory { get; }
+
+    //     Type IInfo.Type => typeof(T);
+    //     object IInfo.Default => Default;
+    //     Func<IChunkLayer> IInfo.Factory => Factory;
+
+    //     public Info(byte id, T @default, Func<IChunkLayer<T>> factory)
+    //         { ID = id; Default = @default; Factory = factory; }
+    // }
+
+    // public static bool TryGet<T>(out Info<T> info)
+    // {
+    //     if (TryGet(typeof(T), out var infoObj))
+    //         { info = (Info<T>)infoObj; return true; }
+    //     else { info = null; return false; }
+    // }
+    // public static bool TryGet(Type type, out IInfo info)
+    //     => _byType.TryGetValue(type, out info);
+    // public static bool TryGet(byte id, out IInfo info)
+    //     => _byID.TryGetValue(id, out info);
 }

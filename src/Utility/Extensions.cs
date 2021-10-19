@@ -27,6 +27,16 @@ public static class Extensions
         }
         return child;
     }
+    public static void AddRange(this Node parent, IEnumerable<Node> children)
+        { foreach (var child in children) parent.AddChild(child); }
+    public static void ClearChildren(this Node parent)
+    {
+        for (var i = parent.GetChildCount() - 1; i >= 0; i--) {
+            var child = parent.GetChild(i);
+            parent.RemoveChild(child);
+            child.QueueFree();
+        }
+    }
     public static void RemoveFromParent(this Node node)
     {
         node.GetParent().RemoveChild(node);

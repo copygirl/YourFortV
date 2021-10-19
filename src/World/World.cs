@@ -1,15 +1,29 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Text;
 using Godot;
+using MessagePack;
+using File = System.IO.File;
 
-public class World : Node
+public partial class World : Node
 {
+    public const string FILE_EXT     = ".yf5";
+    public const string MAGIC_NUMBER = "YF5s"; // 0x59463573
+
+    public static readonly string WORLDS_DIR = OS.GetUserDataDir() + "/worlds/";
+
+
     internal Node PlayerContainer { get; }
     internal Node ChunkContainer { get; }
 
-    public IWorldGenerator Generator { get; set; } = WorldGeneratorRegistry.GetOrNull("Simple");
+    public DateTime LastSaved { get; set; }
+    public TimeSpan Playtime { get; set; } = TimeSpan.Zero;
     public int Seed { get; set; } = unchecked((int)GD.Randi());
+    public IWorldGenerator Generator { get; set; } = WorldGeneratorRegistry.GetOrNull("Simple");
+
+    public BlockRef this[BlockPos pos] => new BlockRef(this, pos);
+    public BlockRef this[int x, int y] => new BlockRef(this, new BlockPos(x, y));
 
     public World()
     {
@@ -26,64 +40,32 @@ public class World : Node
 
     public IEnumerable<Chunk> Chunks
         => ChunkContainer.GetChildren<Chunk>();
-    public Chunk GetChunkOrNull((int X, int Y) chunkPos)
-        => ChunkContainer.GetNodeOrNull<Chunk>($"Chunk ({chunkPos})");
-    public Chunk GetOrCreateChunk((int X, int Y) chunkPos, bool generate = false)
-        => ChunkContainer.GetOrCreateChild($"Chunk ({chunkPos})", () => {
+    public Chunk GetChunk((int X, int Y) chunkPos, bool create) => !create
+        ? ChunkContainer.GetNodeOrNull<Chunk>($"Chunk ({chunkPos})")
+        : ChunkContainer.GetOrCreateChild($"Chunk ({chunkPos})", () => {
             var chunk = new Chunk(chunkPos);
-            if (generate) Generator.Generate(chunk);
+            if (this.GetGame() is Server)
+                Generator.Generate(chunk);
             return chunk;
         });
     [PuppetSync] public void ClearChunks()
         { foreach (var chunk in Chunks) chunk.RemoveFromParent(); }
 
 
-    public BlockData GetBlockDataAt(BlockPos position)
-        => GetChunkOrNull(position.ToChunkPos())
-            ?.GetLayerOrNull<BlockLayer>()?[position.GlobalToChunkRel()] ?? default;
-
     [PuppetSync]
-    public void SetBlockData(int x, int y, int color)
+    public void SetBlock(int x, int y, int color)
     {
-        var blockPos = new BlockPos(x, y);
-        GetOrCreateChunk(blockPos.ToChunkPos())
-            .GetOrCreateLayer<BlockLayer>()[blockPos.GlobalToChunkRel()]
-                = (color != 0) ? new BlockData(Block.DEFAULT, color) : default;
+        var block = this[x, y];
+        block.Set((color != 0) ? Blocks.DEFAULT : Blocks.AIR);
+        block.Set(new Color(color));
     }
 
     [PuppetSync]
-    public void SpawnChunk(int chunkX, int chunkY, byte[] data)
+    public void SpawnChunk(byte[] data)
     {
-        var chunk = GetOrCreateChunk((chunkX, chunkY));
-        using (var stream = new MemoryStream(data)) {
-            using (var reader = new BinaryReader(stream)) {
-                var numLayers = reader.ReadByte();
-                for (var i = 0; i < numLayers; i++) {
-                    var name  = reader.ReadString();
-                    var layer = chunk.GetOrCreateLayer(name);
-                    layer.Read(reader);
-                }
-            }
-        }
-    }
-
-    private static byte[] ChunkToBytes(Chunk chunk)
-    {
-        using (var stream = new MemoryStream()) {
-            using (var writer = new BinaryWriter(stream)) {
-                var layers = chunk.GetChildren()
-                    .OfType<IChunkLayer>()
-                    .Where(layer => !layer.IsDefault)
-                    .ToArray();
-
-                writer.Write((byte)layers.Length);
-                foreach (var layer in layers) {
-                    writer.Write(layer.GetType().Name);
-                    layer.Write(writer);
-                }
-            }
-            return stream.ToArray();
-        }
+        var chunk = MessagePackSerializer.Deserialize<Chunk>(data);
+        ChunkContainer.GetNodeOrNull<Chunk>($"Chunk ({chunk.ChunkPos})")?.RemoveFromParent();
+        ChunkContainer.AddChild(chunk);
     }
 
     [PuppetSync]
@@ -102,13 +84,12 @@ public class World : Node
         }
 
         if (this.GetGame() is Server) {
-            player.VisibilityTracker.ChunkTracked += (chunkPos) => {
-                var chunk  = GetOrCreateChunk(chunkPos, generate: true);
+            player.VisibilityTracker.ChunkTracked += (chunkPos) =>
                 RPC.Reliable(player.NetworkID, SpawnChunk,
-                    chunk.ChunkPosition.X, chunk.ChunkPosition.Y, ChunkToBytes(chunk));
-            };
+                    MessagePackSerializer.Serialize(GetChunk(chunkPos, true)));
+
             player.VisibilityTracker.ChunkUntracked += (chunkPos) => {
-                var chunk = GetChunkOrNull(chunkPos);
+                var chunk = GetChunk(chunkPos, false);
                 if (chunk == null) return;
                 RPC.Reliable(player.NetworkID, Despawn, GetPathTo(chunk), false);
             };
@@ -118,9 +99,10 @@ public class World : Node
     [Puppet]
     public void SpawnHit(NodePath spritePath, Vector2 hitPosition, Color color)
     {
-        var hit    = SceneCache<HitDecal>.Instance();
-        var sprite = this.GetWorld().GetNode<Sprite>(spritePath);
-        hit.Add(sprite, hitPosition, color);
+        var texture = GD.Load<Texture>("res://gfx/hit_decal.png");
+        var sprite  = this.GetWorld().GetNode<Sprite>(spritePath);
+        var hit     = new HitDecal(texture, sprite.Texture, hitPosition, color);
+        sprite.AddChild(hit);
     }
 
     [PuppetSync]
@@ -130,5 +112,39 @@ public class World : Node
         if ((node == null) && !errorIfMissing) return;
         node.GetParent().RemoveChild(node);
         node.QueueFree();
+    }
+
+
+    public void Save(string path)
+    {
+        using (var stream = File.OpenWrite(path + ".tmp")) {
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8, true)) {
+                writer.Write(MAGIC_NUMBER.ToCharArray());
+
+                // TODO: Eventually, write only "header", not chunks.
+                //       Chunks should be stored seperately, in regions or so.
+                var bytes = this.SerializeToBytes();
+                writer.Write(bytes.Length);
+                writer.Write(bytes);
+            }
+        }
+        new Godot.Directory().Rename(path + ".tmp", path);
+        LastSaved = File.GetLastWriteTime(path);
+    }
+
+    public void Load(string path)
+    {
+        using (var stream = File.OpenRead(path)) {
+            using (var reader = new BinaryReader(stream, Encoding.UTF8, true)) {
+                var magic = new string(reader.ReadChars(MAGIC_NUMBER.Length));
+                if (magic != MAGIC_NUMBER) throw new IOException(
+                    $"Magic number does not match ({magic:X8} != {MAGIC_NUMBER:X8})");
+
+                var numBytes = reader.ReadInt32();
+                var bytes    = reader.ReadBytes(numBytes);
+                this.Deserialize(bytes);
+            }
+        }
+        LastSaved = File.GetLastAccessTime(path);
     }
 }

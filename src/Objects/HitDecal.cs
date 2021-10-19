@@ -5,24 +5,24 @@ public class HitDecal : Sprite
 {
     private static readonly TimeSpan LIFE_TIME = TimeSpan.FromSeconds(5.0);
     private static readonly TimeSpan FADE_TIME = TimeSpan.FromSeconds(5.0);
+    private static readonly Material MATERIAL = GD.Load<Material>("res://decal_material.tres");
 
+    private readonly float _fadeFactor;
     private TimeSpan _age = TimeSpan.Zero;
-    private float _fadeFactor;
 
-    public void Add(Sprite sprite, Vector2 hitVec, Color color)
+    public HitDecal(Texture own, Texture target, Vector2 hitVec, Color color)
     {
-        Position   = (hitVec - Texture.GetSize() / 2).Round();
-        var offset = Position + sprite.Texture.GetSize() / 2;
+        Texture  = own;
+        Material = (Material)MATERIAL.Duplicate();
+        Position = (hitVec - own.GetSize() / 2).Round();
+        Centered = false;
 
-        ShaderMaterial material;
-        Material = material = (ShaderMaterial)Material.Duplicate();
-        material.SetShaderParam("offset", new Vector3(offset.x, offset.y, 0));
-        material.SetShaderParam("mask", sprite.Texture);
+        var offset = Position + target.GetSize() / 2;
+        ((ShaderMaterial)Material).SetShaderParam("offset", new Vector3(offset.x, offset.y, 0));
+        ((ShaderMaterial)Material).SetShaderParam("mask", target);
 
         Modulate    = color;
         _fadeFactor = color.a;
-
-        sprite.AddChild(this);
     }
 
     public override void _Process(float delta)

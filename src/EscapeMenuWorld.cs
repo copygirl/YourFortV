@@ -21,7 +21,6 @@ public class EscapeMenuWorld : CenterContainer
     public FileDialog SaveFileDialog { get; private set; }
     public FileDialog LoadFileDialog { get; private set; }
 
-    private TimeSpan _playtime;
     private string _currentWorld;
 
     public override void _Ready()
@@ -39,23 +38,26 @@ public class EscapeMenuWorld : CenterContainer
         SaveAsButton.Text = "Save World As...";
         SaveFileDialog.GetOk().Text = "Save";
 
-        new Directory().MakeDirRecursive(WorldSave.WORLDS_DIR);
-        SaveFileDialog.CurrentPath = WorldSave.WORLDS_DIR;
-        LoadFileDialog.CurrentPath = WorldSave.WORLDS_DIR;
+        new Directory().MakeDirRecursive(World.WORLDS_DIR);
+        SaveFileDialog.CurrentPath = World.WORLDS_DIR;
+        LoadFileDialog.CurrentPath = World.WORLDS_DIR;
 
         this.GetClient().StatusChanged += OnStatusChanged;
     }
 
     public override void _Process(float delta)
     {
-        if (!GetTree().Paused || (this.GetWorld().PauseMode != PauseModeEnum.Stop))
-            _playtime += TimeSpan.FromSeconds(delta);
+        // TODO: Probably move this to World class.
+        var world = this.GetWorld();
+        if (!GetTree().Paused || (world.PauseMode != PauseModeEnum.Stop))
+            world.Playtime += TimeSpan.FromSeconds(delta);
 
         var b = new StringBuilder();
-        if (_playtime.Days > 0) b.Append(_playtime.Days).Append("d ");
-        if (_playtime.Hours > 0) b.Append(_playtime.Hours).Append("h ");
-        if (_playtime.Minutes < 10) b.Append('0'); b.Append(_playtime.Minutes).Append("m ");
-        if (_playtime.Seconds < 10) b.Append('0'); b.Append(_playtime.Seconds).Append("s");
+        var p = world.Playtime;
+        if (p.Days > 0) b.Append(p.Days).Append("d ");
+        if (p.Hours > 0) b.Append(p.Hours).Append("h ");
+        if (p.Minutes < 10) b.Append('0'); b.Append(p.Minutes).Append("m ");
+        if (p.Seconds < 10) b.Append('0'); b.Append(p.Seconds).Append("s");
         PlaytimeLabel.Text = b.ToString();
     }
 
@@ -81,13 +83,12 @@ public class EscapeMenuWorld : CenterContainer
     private void _on_SaveFileDialog_file_selected(string path)
     {
         var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer)).Server;
-        var save   = new WorldSave { Playtime = _playtime };
-        save.WriteDataFromWorld(server.GetWorld());
-        save.WriteToFile(path);
+        var world  = server.GetWorld();
+        world.Save(path);
 
         _currentWorld = path;
         FilenameLabel.Text  = System.IO.Path.GetFileName(path);
-        LastSavedLabel.Text = save.LastSaved.ToString("yyyy-MM-dd HH:mm");
+        LastSavedLabel.Text = world.LastSaved.ToString("yyyy-MM-dd HH:mm");
         QuickSaveButton.Visible = true;
         SaveAsButton.Text = "Save As...";
     }
@@ -101,9 +102,9 @@ public class EscapeMenuWorld : CenterContainer
     private void _on_LoadFileDialog_file_selected(string path)
     {
         var server = this.GetClient().GetNode<IntegratedServer>(nameof(IntegratedServer)).Server;
-        var save   = WorldSave.ReadFromFile(path);
+        var world  = server.GetWorld();
 
-        foreach (var player in server.GetWorld().Players) {
+        foreach (var player in world.Players) {
             // Reset players' positions.
             // Can't use RPC helper method here since player is not a LocalPlayer here.
             player.RsetId(player.NetworkID, "position", Vector2.Zero);
@@ -112,12 +113,11 @@ public class EscapeMenuWorld : CenterContainer
             player.VisibilityTracker.Reset();
         }
 
-        save.ReadDataIntoWorld(server.GetWorld());
-        _playtime = save.Playtime;
+        world.Load(path);
 
         _currentWorld = path;
         FilenameLabel.Text  = System.IO.Path.GetFileName(path);
-        LastSavedLabel.Text = save.LastSaved.ToString("yyyy-MM-dd HH:mm");
+        LastSavedLabel.Text = world.LastSaved.ToString("yyyy-MM-dd HH:mm");
         QuickSaveButton.Visible = true;
         SaveAsButton.Text = "Save As...";
     }
