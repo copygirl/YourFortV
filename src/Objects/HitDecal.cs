@@ -34,4 +34,37 @@ public class HitDecal : Sprite
             if (Modulate.a <= 0) this.RemoveFromParent();
         }
     }
+
+    public static void Spawn(World world, NodePath path, Vector2 hitPosition, Color color)
+    {
+        var decal = GD.Load<Texture>("res://gfx/hit_decal.png");
+        var node  = world.GetNode(path);
+        switch (node) {
+            case Sprite sprite:
+                node.AddChild(new HitDecal(decal, sprite.Texture, hitPosition, color));
+                break;
+            case Chunk chunk:
+                hitPosition += chunk.Position;
+                var start = BlockPos.FromVector((hitPosition - decal.GetSize() / 2).Floor());
+                var end   = BlockPos.FromVector((hitPosition + decal.GetSize() / 2).Ceil());
+                for (var x = start.X; x <= end.X; x++)
+                for (var y = start.Y; y <= end.Y; y++) {
+                    var blockPos = new BlockPos(x, y);
+                    var texture  = world[blockPos].Get<Block>().Texture;
+                    if (texture == null) continue;
+                    world[blockPos].GetOrCreate<HitDecals>().AddChild(new HitDecal(
+                        decal, texture, hitPosition - blockPos.ToVector(), color));
+                }
+                break;
+        }
+    }
+}
+
+public class HitDecals : Node2D, INotifyChildRemoved
+{
+    public void OnChildRemoved(Node child)
+    {
+        if (GetChildCount() == 0)
+            this.RemoveFromParent();
+    }
 }

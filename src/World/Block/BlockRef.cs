@@ -21,6 +21,8 @@ public class BlockRef
 
     public BlockEntity GetEntity(bool create)
         => GetChunk(create)?.GetBlockEntity(Position.GlobalToChunkRel(), create);
+    public void RemoveEntity()
+        => GetChunk(false)?.RemoveBlockEntity(Position.GlobalToChunkRel());
 
 
     public T Get<T>()
@@ -47,4 +49,8 @@ public class BlockRef
             entity.AddChild((Node)(object)value);
         } else throw new ArgumentException($"Unable to access {typeof(T).Name} on a Block", nameof(T));
     }
+
+    // TODO: Clear block entity when last child is removed?
+    public void Remove<T>() where T : Node
+        => GetEntity(false)?.GetNode(typeof(T).Name)?.RemoveFromParent();
 }

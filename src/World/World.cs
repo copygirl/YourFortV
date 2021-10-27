@@ -97,13 +97,8 @@ public partial class World : Node
     }
 
     [Puppet]
-    public void SpawnHit(NodePath spritePath, Vector2 hitPosition, Color color)
-    {
-        var texture = GD.Load<Texture>("res://gfx/hit_decal.png");
-        var sprite  = this.GetWorld().GetNode<Sprite>(spritePath);
-        var hit     = new HitDecal(texture, sprite.Texture, hitPosition, color);
-        sprite.AddChild(hit);
-    }
+    public void SpawnHit(NodePath path, Vector2 hitPosition, Color color)
+        => HitDecal.Spawn(this.GetWorld(), path, hitPosition, color);
 
     [PuppetSync]
     public void Despawn(NodePath path, bool errorIfMissing)

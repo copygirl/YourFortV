@@ -49,15 +49,28 @@ public partial class Chunk : Node2D
         }
         return layer;
     }
-    public void OnLayerChanged(IChunkLayer layer)
-        => _dirty = true;
+
+    public void OnLayerChanged(IChunkLayer layer, BlockPos pos)
+    {
+        _dirty = true;
+        // Clear block entity if block is changed.
+        if (layer is BlockLayer) RemoveBlockEntity(pos);
+    }
 
 
     public BlockEntity GetBlockEntity(BlockPos pos, bool create)
     {
         EnsureWithinBounds(pos);
-        return create ? this.GetOrCreateChild(pos.ToString(), () => new BlockEntity())
+        return create ? this.GetOrCreateChild(pos.ToString(), () =>
+                          new BlockEntity(new BlockRef(this.GetWorld(),
+                              pos.ChunkRelToGlobal(ChunkPos))))
                       : GetNode<BlockEntity>(pos.ToString());
+    }
+
+    public void RemoveBlockEntity(BlockPos pos)
+    {
+        EnsureWithinBounds(pos);
+        GetNode(pos.ToString())?.RemoveFromParent();
     }
 
 

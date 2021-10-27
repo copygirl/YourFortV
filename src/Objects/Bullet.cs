@@ -34,17 +34,23 @@ public class Bullet : Node2D
     {
         // TODO: Add a global game setting to specify whether shooter or server announces successful hit.
         //       For now, server is the most straight-forward. Eventually, support client predictive movement?
-        if (!(this.GetGame() is Server) || !(obj.GetNodeOrNull("Sprite") is Sprite sprite)) return;
+        if (!(this.GetGame() is Server)) return;
         var world = this.GetWorld();
-        var path  = world.GetPathTo(sprite);
         var color = new Color(Color, (1 + Color.a) / 2);
-        RPC.Reliable(world.GetPlayersTracking(BlockPos.FromVector(obj.GlobalPosition).ToChunkPos()),
-            world.SpawnHit, path, hitPosition, color);
-        if (obj is Player player) {
-            var rangeFactor = Math.Min(1.0F, (MaximumRange - _distance) / (MaximumRange - EffectiveRange));
-            player.Health -= Damage * rangeFactor;
+        if (obj.GetParent() is Chunk chunk) {
+            var path = world.GetPathTo(chunk);
+            var to   = world.GetPlayersTracking(chunk.ChunkPos);
+            RPC.Reliable(to, world.SpawnHit, path, hitPosition, color);
+        } else if (obj.GetNodeOrNull("Sprite") is Sprite sprite) {
+            var path = world.GetPathTo(sprite);
+            var to   = world.GetPlayersTracking(BlockPos.FromVector(obj.GlobalPosition).ToChunkPos());
+            RPC.Reliable(to, world.SpawnHit, path, hitPosition, color);
+            if (obj is Player player) {
+                var rangeFactor = Math.Min(1.0F, (MaximumRange - _distance) / (MaximumRange - EffectiveRange));
+                player.Health -= Damage * rangeFactor;
+            }
+            // TODO: Also spawn a ghost of the player who was hit so they can see where they got shot?
         }
-        // TODO: Also spawn a ghost of the player who was hit so they can see where they got shot?
     }
 
     public override void _Ready()

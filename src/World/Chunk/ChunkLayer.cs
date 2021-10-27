@@ -12,14 +12,14 @@ public interface IChunkLayer : IDeSerializable
 {
     Type AccessType { get; }
     bool IsDefault { get; }
-    event Action<IChunkLayer> Changed;
+    event Action<IChunkLayer, BlockPos> Changed;
 }
 
 public interface IChunkLayer<T> : IChunkLayer
 {
     T this[BlockPos pos] { get; set; }
     T this[int x, int y] { get; set; }
-    T this[int index] { get; set; }
+    T this[int index] { get; }
 }
 
 public class ArrayChunkLayer<T> : IChunkLayer<T>
@@ -32,26 +32,24 @@ public class ArrayChunkLayer<T> : IChunkLayer<T>
     public Type AccessType => typeof(T);
     public bool IsDefault  => NonDefaultCount == 0;
 
-    public event Action<IChunkLayer> Changed;
+    public event Action<IChunkLayer, BlockPos> Changed;
 
-    public T this[BlockPos pos] {
-        get => this[Chunk.GetIndex(pos)];
-        set => this[Chunk.GetIndex(pos)] = value;
-    }
+    public T this[int index] => _data[index];
     public T this[int x, int y] {
         get => this[Chunk.GetIndex(x, y)];
-        set => this[Chunk.GetIndex(x, y)] = value;
+        set => this[new BlockPos(x, y)] = value;
     }
-    public T this[int index] {
-        get => _data[index];
+    public T this[BlockPos pos] {
+        get => this[Chunk.GetIndex(pos.X, pos.Y)];
         set {
+            var index = Chunk.GetIndex(pos.X, pos.Y);
             var previous = _data[index];
             if (COMPARER.Equals(value, previous)) return;
             _data[index] = value;
 
             if (!COMPARER.Equals(previous, default)) NonDefaultCount--;
             if (!COMPARER.Equals(value, default)) NonDefaultCount++;
-            Changed?.Invoke(this);
+            Changed?.Invoke(this, pos);
         }
     }
 
@@ -78,10 +76,10 @@ public class TranslationLayer<TData, TAccess> : IChunkLayer<TAccess>
 
     public Type AccessType => typeof(TAccess);
     public bool IsDefault  => _data.IsDefault;
-    public event Action<IChunkLayer> Changed { add => _data.Changed += value; remove => _data.Changed -= value; }
+    public event Action<IChunkLayer, BlockPos> Changed { add => _data.Changed += value; remove => _data.Changed -= value; }
     public TAccess this[BlockPos pos] { get => _from(_data[pos]); set => _data[pos] = _to(value); }
     public TAccess this[int x, int y] { get => _from(_data[x, y]); set => _data[x, y] = _to(value); }
-    public TAccess this[int index] { get => _from(_data[index]); set => _data[index] = _to(value); }
+    public TAccess this[int index] => _from(_data[index]);
 
     public void Serialize(ref MessagePackWriter writer, MessagePackSerializerOptions options)
         => _data.Serialize(ref writer, options);

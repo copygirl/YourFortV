@@ -16,6 +16,10 @@ public static class Extensions
 
     public static IEnumerable<T> GetChildren<T>(this Node node)
         => node.GetChildren().Cast<T>();
+    public static T GetOrCreateChild<T>(this Node node)
+        where T : Node, new() => node.GetOrCreateChild<T>(typeof(T).Name, () => new T());
+    public static T GetOrCreateChild<T>(this Node node, string name)
+        where T : Node, new() => node.GetOrCreateChild<T>(name, () => new T());
     public static T GetOrCreateChild<T>(this Node node, string name, Func<T> createFunc)
         where T : Node
     {
@@ -39,8 +43,10 @@ public static class Extensions
     }
     public static void RemoveFromParent(this Node node)
     {
+        var notifyParent = node.GetParent() as INotifyChildRemoved;
         node.GetParent().RemoveChild(node);
         node.QueueFree();
+        notifyParent?.OnChildRemoved(node);
     }
 
     public static float NextFloat(this Random random)
@@ -58,4 +64,12 @@ public static class Extensions
 
     public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> kvp, out TKey key, out TValue value)
         { key = kvp.Key; value = kvp.Value; }
+}
+
+/// <summary> When a child is removed from this Node using
+///           <see cref="Extensions.RemoveFromParent"/>,
+///           the OnChildRemoved method is called. </summary>
+public interface INotifyChildRemoved
+{
+    void OnChildRemoved(Node child);
 }
